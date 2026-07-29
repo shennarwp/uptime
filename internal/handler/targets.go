@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"uptime/internal/service"
 )
@@ -14,6 +15,11 @@ func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 }
 
 func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
-	result := h.svc.GetTargets()
-	w.Write([]byte(result))
+	targets, err := h.svc.GetTargets()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(targets)
 }
