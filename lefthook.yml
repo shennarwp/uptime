@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    go-vet:
+      glob: "*.go"
+      run: go vet ./...
+    tsc:
+      glob: "*.{ts,tsx}"
+      run: cd web && npx tsc --noEmit
+    eslint:
+      glob: "*.{ts,tsx,js,jsx}"
+      run: cd web && npx eslint --cache --fix {staged_files}
