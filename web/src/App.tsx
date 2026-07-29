@@ -7,7 +7,7 @@ function App() {
     fetch('/api/targets')
       .then((res) => res.text())
       .then(setData);
-  },     []);
+  }, []);
 
   return <h1>{data}</h1>;
 }
