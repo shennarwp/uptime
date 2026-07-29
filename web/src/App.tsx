@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 
 function App() {
-  const [data, setData] = useState('')
+  const [data, setData] = useState('');
 
   useEffect(() => {
     fetch('/api/targets')
-      .then(res => res.text())
-      .then(setData)
-  }, [])
+      .then((res) => res.text())
+      .then(setData);
+  },     []);
 
-  return <h1>{data}</h1>
+  return <h1>{data}</h1>;
 }
 
-export default App
+export default App;
