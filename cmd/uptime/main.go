@@ -1,19 +1,27 @@
 package main
 
 import (
-	"net/http"
-	"uptime/internal/database"
-	"uptime/internal/handler"
-	"uptime/internal/service"
+    "log"
+    "net/http"
+    "uptime/internal/database"
+    "uptime/internal/handler"
+    "uptime/internal/service"
 )
 
 func main() {
-	repo := database.NewTargetRepository()
-	svc := service.NewTargetService(repo)
-	h := handler.NewTargetHandler(svc)
+    db, err := database.Open("./uptime.db")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/targets", h.GetTargets)
+    repo := database.NewTargetRepository(db)
+    svc := service.NewTargetService(repo)
+    h := handler.NewTargetHandler(svc)
 
-	http.ListenAndServe(":8080", mux)
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /api/targets", h.GetTargets)
+
+    log.Println("listening on :8080")
+    http.ListenAndServe(":8080", mux)
 }

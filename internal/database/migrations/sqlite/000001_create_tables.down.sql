@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS incidents;
+DROP TABLE IF EXISTS checks;
+DROP TABLE IF EXISTS targets;
