@@ -5,8 +5,10 @@ pre-commit:
       glob: "*.go"
       run: go vet ./...
     tsc:
+      root: "web/"
       glob: "*.{ts,tsx}"
-      run: cd web && npx tsc --noEmit
+      run: npx tsc --noEmit
     eslint:
+      root: "web/"
       glob: "*.{ts,tsx,js,jsx}"
-      run: cd web && npx eslint --cache --fix {staged_files}
+      run: npx eslint --cache --fix {staged_files}
