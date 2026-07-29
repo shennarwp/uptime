@@ -1,15 +1,41 @@
 import { useEffect, useState } from 'react';
 
+type Target = {
+  id: number;
+  name: string;
+  url: string;
+  interval_s: number;
+};
+
 function App() {
-  const [data, setData] = useState('');
+  const [targets, setTargets] = useState<Target[]>([]);
 
   useEffect(() => {
     fetch('/api/targets')
-      .then((res) => res.text())
-      .then(setData);
+      .then((res) => res.json())
+      .then(setTargets);
   }, []);
 
-  return <h1>{data}</h1>;
+  return (
+    <div>
+      <h1>Uptime</h1>
+      {targets.length === 0 ? (
+        <p>No targets configured.</p>
+      ) : (
+        <ul>
+          {targets.map((t) => (
+            <li key={t.id}>
+              <strong>{t.name}</strong> –{' '}
+              <a href={t.url} target="_blank" rel="noreferrer">
+                {t.url}
+              </a>{' '}
+              (every {t.interval_s}s)
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default App;
