@@ -1,0 +1,23 @@
+# Go
+/bin
+/pkg
+/cmd/server/server
+*.exe
+*.test
+*.out
+go.sum
+
+# React/Node
+/web/node_modules
+/web/dist
+/web/.vite
+.env
+.env.local
+.env.*.local
+*.log
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
