@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -27,5 +28,12 @@
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}":  [
+      "eslint --cache --fix",
+      "prettier --write"
+    ],
+    "*.{ts,js,css,md,html,json,yaml,yml}": "prettier --write"
   }
 }
