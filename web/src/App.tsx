@@ -4,7 +4,7 @@ type Target = {
   id: number;
   name: string;
   url: string;
-  interval_s: number;
+  schedule: string;
 };
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
               <a href={t.url} target="_blank" rel="noreferrer">
                 {t.url}
               </a>{' '}
-              (every {t.interval_s}s)
+              (schedule: {t.schedule})
             </li>
           ))}
         </ul>

@@ -23,7 +23,7 @@ func NewPollingService(repo *database.TargetRepository) *PollingService {
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		cron: cron.New(),
+		cron: cron.New(cron.WithSeconds()),
 	}
 }
 
@@ -36,11 +36,11 @@ func (s *PollingService) Start(ctx context.Context) {
 
 	for _, target := range targets {
 		t := target
-		_, err := s.cron.AddFunc("@every 1m", func() {
+		_, err := s.cron.AddFunc(t.Schedule, func() {
 			s.pingTarget(t)
 		})
 		if err != nil {
-			log.Printf("[Polling] Error adding cron for target %s: %v", t.Name, err)
+			log.Printf("[Polling] Error adding cron for target %s (schedule %s): %v", t.Name, t.Schedule, err)
 		}
 	}
 

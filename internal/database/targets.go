@@ -14,7 +14,7 @@ func NewTargetRepository(db *sql.DB) *TargetRepository {
 }
 
 func (r *TargetRepository) GetTargets() ([]Target, error) {
-	rows, err := r.db.Query("SELECT id, name, url, interval_s, created_at, updated_at FROM targets")
+	rows, err := r.db.Query("SELECT id, name, url, schedule, created_at, updated_at FROM targets")
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 	var targets []Target
 	for rows.Next() {
 		var t Target
-		if err := rows.Scan(&t.ID, &t.Name, &t.URL, &t.IntervalS, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
 		targets = append(targets, t)
@@ -39,8 +39,8 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 func (r *TargetRepository) GetTargetByID(id int) (*Target, error) {
 	var t Target
 	err := r.db.QueryRow(
-		"SELECT id, name, url, interval_s, created_at, updated_at FROM targets WHERE id = ?", id,
-	).Scan(&t.ID, &t.Name, &t.URL, &t.IntervalS, &t.CreatedAt, &t.UpdatedAt)
+		"SELECT id, name, url, schedule, created_at, updated_at FROM targets WHERE id = ?", id,
+	).Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +52,8 @@ func (r *TargetRepository) CreateTarget(t *Target) error {
 	t.CreatedAt = now
 	t.UpdatedAt = now
 	result, err := r.db.Exec(
-		"INSERT INTO targets (name, url, interval_s, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		t.Name, t.URL, t.IntervalS, t.CreatedAt, t.UpdatedAt,
+		"INSERT INTO targets (name, url, schedule, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+		t.Name, t.URL, t.Schedule, t.CreatedAt, t.UpdatedAt,
 	)
 	if err != nil {
 		return err
