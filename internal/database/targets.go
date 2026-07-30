@@ -1,6 +1,9 @@
 package database
 
-import "database/sql"
+import (
+	"database/sql"
+	"log"
+)
 
 type TargetRepository struct {
 	db *sql.DB
@@ -15,7 +18,12 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(rows)
 
 	var targets []Target
 	for rows.Next() {
