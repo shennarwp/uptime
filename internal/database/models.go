@@ -41,7 +41,7 @@ type Target struct {
     ID        int       `json:"id"`
     Name      string    `json:"name"`
     URL       string    `json:"url"`
-    IntervalS int       `json:"interval_s"`
+    Schedule  string    `json:"schedule"`
     CreatedAt Timestamp `json:"created_at"`
     UpdatedAt Timestamp `json:"updated_at"`
 }
