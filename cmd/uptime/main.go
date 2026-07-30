@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -24,6 +25,9 @@ func main() {
 	repo := database.NewTargetRepository(db)
 	svc := service.NewTargetService(repo)
 	h := handler.NewTargetHandler(svc)
+
+	pollingSvc := service.NewPollingService(repo)
+	go pollingSvc.Start(context.Background())
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/targets", h.GetTargets)
