@@ -5,14 +5,16 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 	"uptime/internal/database"
+
+	"github.com/robfig/cron/v3"
 )
 
 type PollingService struct {
 	repo   *database.TargetRepository
 	client *http.Client
+	cron   *cron.Cron
 }
 
 func NewPollingService(repo *database.TargetRepository) *PollingService {
@@ -21,45 +23,31 @@ func NewPollingService(repo *database.TargetRepository) *PollingService {
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		cron: cron.New(),
 	}
 }
 
 func (s *PollingService) Start(ctx context.Context) {
-	ticker := time.NewTicker(60 * time.Second)
-	defer ticker.Stop()
-
-	go s.PollTargets()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			go s.PollTargets()
-		}
-	}
-}
-
-func (s *PollingService) PollTargets() {
 	targets, err := s.repo.GetTargets()
 	if err != nil {
 		log.Printf("[Polling] Error fetching targets: %v", err)
 		return
 	}
 
-	if len(targets) == 0 {
-		return
+	for _, target := range targets {
+		t := target
+		_, err := s.cron.AddFunc("@every 1m", func() {
+			s.pingTarget(t)
+		})
+		if err != nil {
+			log.Printf("[Polling] Error adding cron for target %s: %v", t.Name, err)
+		}
 	}
 
-	var wg sync.WaitGroup
-	for _, target := range targets {
-		wg.Add(1)
-		go func(t database.Target) {
-			defer wg.Done()
-			s.pingTarget(t)
-		}(target)
-	}
-	wg.Wait()
+	s.cron.Start()
+
+	<-ctx.Done()
+	s.cron.Stop()
 }
 
 func (s *PollingService) pingTarget(t database.Target) {
