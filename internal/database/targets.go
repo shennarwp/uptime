@@ -105,3 +105,46 @@ func (r *TargetRepository) CloseIncident(id int) error {
 	)
 	return err
 }
+
+func (r *TargetRepository) GetTargetsWithRecentChecks(limit int) ([]TargetWithChecks, error) {
+	targets, err := r.GetTargets()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []TargetWithChecks
+	for _, t := range targets {
+		checks, err := r.GetRecentChecksByTargetID(t.ID, limit)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, TargetWithChecks{
+			Target: t,
+			Checks: checks,
+		})
+	}
+	return result, nil
+}
+
+func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([]Check, error) {
+	rows, err := r.db.Query(
+		"SELECT id, target_id, status_code, response_time_ms, is_up, error_message, checked_at FROM checks WHERE target_id = ? ORDER BY checked_at DESC, id DESC LIMIT ?",
+		targetID, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var checks []Check
+	for rows.Next() {
+		var c Check
+		var isUpInt int
+		if err := rows.Scan(&c.ID, &c.TargetID, &c.StatusCode, &c.ResponseTimeMS, &isUpInt, &c.ErrorMessage, &c.CheckedAt); err != nil {
+			return nil, err
+		}
+		c.IsUp = (isUpInt == 1)
+		checks = append(checks, c)
+	}
+	return checks, rows.Err()
+}

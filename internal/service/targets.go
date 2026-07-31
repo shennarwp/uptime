@@ -13,3 +13,7 @@ func NewTargetService(repo *database.TargetRepository) *TargetService {
 func (s *TargetService) GetTargets() ([]database.Target, error) {
 	return s.repo.GetTargets()
 }
+
+func (s *TargetService) GetTargetsWithRecentChecks(limit int) ([]database.TargetWithChecks, error) {
+	return s.repo.GetTargetsWithRecentChecks(limit)
+}
