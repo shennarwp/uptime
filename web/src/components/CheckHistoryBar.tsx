@@ -19,7 +19,7 @@ export function CheckHistoryBar({ checks }: { checks: Check[] }) {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        const count = Math.max(1, Math.floor(width / 13));
+        const count = Math.max(1, Math.floor(width / 8));
         setMaxBoxes(count);
       }
     });
