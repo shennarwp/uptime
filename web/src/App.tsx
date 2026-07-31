@@ -27,6 +27,7 @@ type TargetWithChecks = {
 function App() {
   const [targets, setTargets] = useState<TargetWithChecks[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/targets')
@@ -41,10 +42,14 @@ function App() {
 
   const handleSelect = (id: number) => {
     setSelectedId(id);
+    setHighlightedId(id);
     const el = document.getElementById(`target-${id}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    setTimeout(() => {
+      setHighlightedId((prev) => (prev === id ? null : prev));
+    }, 1000);
   };
 
   return (
@@ -56,7 +61,9 @@ function App() {
           {targets.length === 0 ? (
             <p>No targets configured.</p>
           ) : (
-            targets.map((t) => <TargetCard key={t.id} target={t} />)
+            targets.map((t) => (
+              <TargetCard key={t.id} target={t} isHighlighted={highlightedId === t.id} />
+            ))
           )}
         </main>
       </div>
