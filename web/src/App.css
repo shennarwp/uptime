@@ -217,7 +217,7 @@ body {
 
 .history-bar {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   align-items: center;
   flex-wrap: nowrap;
   width: 100%;
@@ -225,7 +225,7 @@ body {
 
 .history-box {
   flex: 1;
-  min-width: 6px;
+  min-width: 4px;
   height: 20px;
   border-radius: 2px;
   cursor: pointer;

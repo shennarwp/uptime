@@ -21,7 +21,7 @@ func NewPollingService(repo *database.TargetRepository) *PollingService {
 	return &PollingService{
 		repo: repo,
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 		cron: cron.New(cron.WithSeconds()),
 	}
