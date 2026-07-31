@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 type Target = {
   id: number;
   name: string;
@@ -10,10 +12,19 @@ type SidebarProps = {
 };
 
 export function Sidebar({ targets, selectedId, onSelect }: SidebarProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOpen = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
     <aside className="app-sidebar">
-      <h2 className="sidebar-title">Targets</h2>
-      <ul className="sidebar-list">
+      <div className="sidebar-header" onClick={toggleOpen}>
+        <h2 className="sidebar-title">Targets</h2>
+        <span className="sidebar-indicator">{isOpen ? '▲' : '▼'}</span>
+      </div>
+      <ul className={`sidebar-list ${isOpen ? 'open' : ''}`}>
         {targets.map((t) => (
           <li
             key={t.id}
