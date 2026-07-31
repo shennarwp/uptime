@@ -21,7 +21,13 @@ type TargetWithChecks = {
   checks: Check[];
 };
 
-export function TargetCard({ target }: { target: TargetWithChecks }) {
+export function TargetCard({
+  target,
+  isHighlighted,
+}: {
+  target: TargetWithChecks;
+  isHighlighted: boolean;
+}) {
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
   const isUp = lastCheck ? lastCheck.is_up : false;
   const lastCheckTime = lastCheck
@@ -31,6 +37,9 @@ export function TargetCard({ target }: { target: TargetWithChecks }) {
   let cardClass = 'target-card';
   if (lastCheck) {
     cardClass += isUp ? ' up' : ' down';
+  }
+  if (isHighlighted) {
+    cardClass += ' highlight';
   }
 
   let badgeClass = 'status-badge';
