@@ -15,7 +15,7 @@ func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 }
 
 func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
-	targets, err := h.svc.GetTargets()
+	targets, err := h.svc.GetTargetsWithRecentChecks(1500)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -46,6 +46,11 @@ type Target struct {
     UpdatedAt Timestamp `json:"updated_at"`
 }
 
+type TargetWithChecks struct {
+    Target
+    Checks []Check `json:"checks"`
+}
+
 type Check struct {
     ID             int64      `json:"id"`
     TargetID       int        `json:"target_id"`
