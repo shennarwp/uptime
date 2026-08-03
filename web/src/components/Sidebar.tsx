@@ -25,7 +25,7 @@ export function Sidebar({ targets, selectedId, onSelect }: SidebarProps) {
         <span className="sidebar-indicator">{isOpen ? '▲' : '▼'}</span>
       </div>
       <ul className={`sidebar-list ${isOpen ? 'open' : ''}`}>
-        {targets.map((t) => (
+        {(Array.isArray(targets) ? targets : []).map((t) => (
           <li
             key={t.id}
             onClick={() => onSelect(t.id)}
