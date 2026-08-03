@@ -168,7 +168,7 @@ jobs:
           output: 'alpine-trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy scan results to GitHub Security tab for nginx image
+      - name: Upload Trivy scan results to GitHub Security tab for alpine image
         uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4
         with:
           sarif_file: 'alpine-trivy-results.sarif'

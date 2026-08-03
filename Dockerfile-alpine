@@ -1,5 +1,5 @@
 # Stage 1: Build Frontend
-FROM node:24.18.1 AS frontend-builder
+FROM node:24.18.1-alpine AS frontend-builder
 WORKDIR /app/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
@@ -14,12 +14,25 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/uptime ./cmd/uptime/main.go
 
-# Stage 3: Runtime Image
-FROM alpine:latest
+# Stage 3: Runtime Image using prebuilt Nginx Alpine
+FROM nginx:alpine
 WORKDIR /app
-RUN apk --no-cache add ca-certificates
-COPY --from=backend-builder /app/uptime /app/uptime
-COPY --from=frontend-builder /app/web/dist /app/web/dist
 
-EXPOSE 8080
-CMD ["/app/uptime"]
+RUN apk --no-cache add ca-certificates
+
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built frontend static files to Nginx web root
+COPY --from=frontend-builder /app/web/dist /usr/share/nginx/html
+
+# Copy Go backend binary
+COPY --from=backend-builder /app/uptime /app/uptime
+
+# Copy startup entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 80
+
+CMD ["/app/entrypoint.sh"]
