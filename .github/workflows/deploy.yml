@@ -120,10 +120,10 @@ jobs:
 #          push: true
 #          sbom: true
 #          tags: |
-#            ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:busybox-${{ steps.check-tag.outputs.TAG }}
-#            ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:busybox-latest
-#            ${{ secrets.DOCKERHUB_USERNAME }}/resume:busybox-${{ steps.check-tag.outputs.TAG }}
-#            ${{ secrets.DOCKERHUB_USERNAME }}/resume:busybox-latest
+#            ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:busybox-${{ steps.check-tag.outputs.TAG }}
+#            ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:busybox-latest
+#            ${{ secrets.DOCKERHUB_USERNAME }}/uptime:busybox-${{ steps.check-tag.outputs.TAG }}
+#            ${{ secrets.DOCKERHUB_USERNAME }}/uptime:busybox-latest
 
       - name: Build and push alpine image
         id: build-push-alpine
@@ -134,30 +134,30 @@ jobs:
           push: true
           sbom: true
           tags: |
-            ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:alpine-${{ steps.check-tag.outputs.TAG }}
-            ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:alpine-latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/resume:alpine-${{ steps.check-tag.outputs.TAG }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/resume:alpine-latest
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:alpine-${{ steps.check-tag.outputs.TAG }}
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:alpine-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/uptime:alpine-${{ steps.check-tag.outputs.TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/uptime:alpine-latest
 
 #      - name: Attest dockerhub image
 #        if: github.event_name == 'push' && (github.ref_type == 'branch' || steps.check-tag.outputs.IS_TAG_DEPLOY == 'true')
 #        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
 #        with:
-#          subject-name: ${{ secrets.DOCKERHUB_USERNAME }}/resume
+#          subject-name: ${{ secrets.DOCKERHUB_USERNAME }}/uptime
 #          subject-digest: ${{ steps.build-push-busybox.outputs.digest }}
 
       - name: Attest ghcr image
         if: github.event_name == 'push' && (github.ref_type == 'branch' || steps.check-tag.outputs.IS_TAG_DEPLOY == 'true')
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
         with:
-          subject-name: ghcr.io/${{ secrets.GHCR_USERNAME }}/resume
+          subject-name: ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime
           subject-digest: ${{ steps.build-push-alpine.outputs.digest }}
           push-to-registry: true
 
       - name: Run Trivy vulnerability scanner for alpine image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #v0.36.0
         with:
-          image-ref: 'ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:alpine-${{ steps.check-tag.outputs.TAG }}'
+          image-ref: 'ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:alpine-${{ steps.check-tag.outputs.TAG }}'
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'alpine-trivy-results.sarif'
@@ -172,7 +172,7 @@ jobs:
 #      - name: Run Trivy vulnerability scanner for busybox image
 #        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 #v0.36.0
 #        with:
-#          image-ref: 'ghcr.io/${{ secrets.GHCR_USERNAME }}/resume:busybox-${{ steps.check-tag.outputs.TAG }}'
+#          image-ref: 'ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime:busybox-${{ steps.check-tag.outputs.TAG }}'
 #          format: 'template'
 #          template: '@/contrib/sarif.tpl'
 #          output: 'busybox-trivy-results.sarif'
@@ -230,15 +230,15 @@ jobs:
 #          key: ${{ secrets.KEY }}
 #          port: ${{ secrets.RUIPRYUX_PORT }}
 #          script: |
-#            docker stop resume || true \
-#            && docker rm resume || true \
+#            docker stop uptime || true \
+#            && docker rm uptime || true \
 #            && docker run \
 #                 --detach \
 #                 --net nginx \
-#                 --name resume \
+#                 --name uptime \
 #                 --restart always \
 #                 --expose 80 \
-#                 ${{ secrets.DOCKERHUB_USERNAME }}/resume:busybox-${{ env.DEPLOYED_TAG }} \
+#                 ${{ secrets.DOCKERHUB_USERNAME }}/uptime:busybox-${{ env.DEPLOYED_TAG }} \
 #            && docker container restart nginx \
 #            && docker image prune --force
 
