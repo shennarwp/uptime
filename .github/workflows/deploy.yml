@@ -240,7 +240,7 @@ jobs:
                  --net nginx \
                  --name uptime \
                  --restart always \
-                 --volume ~/uptime/uptime.db:/app/uptime.db
+                 --volume ~/uptime/uptime.db:/app/uptime.db \
                  --expose 80 \
                  ${{ secrets.DOCKERHUB_USERNAME }}/uptime:alpine-${{ env.DEPLOYED_TAG }} \
             && docker container restart nginx \
