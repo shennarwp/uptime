@@ -27,7 +27,8 @@ export function CheckHistoryBar({ checks }: { checks: Check[] }) {
     return () => observer.disconnect();
   }, []);
 
-  const relevantChecks = [...checks].slice(0, maxBoxes);
+  const safeChecks = Array.isArray(checks) ? checks : [];
+  const relevantChecks = [...safeChecks].slice(0, maxBoxes);
   const chronologicalChecks = relevantChecks.reverse();
   const paddingCount = Math.max(0, maxBoxes - chronologicalChecks.length);
   const placeholders = Array.from({ length: paddingCount }, (_, i) => ({
