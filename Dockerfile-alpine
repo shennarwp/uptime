@@ -1,0 +1,25 @@
+# Stage 1: Build Frontend
+FROM node:24.18.1 AS frontend-builder
+WORKDIR /app/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
+
+# Stage 2: Build Backend
+FROM golang:1.26.5-alpine AS backend-builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/uptime ./cmd/uptime/main.go
+
+# Stage 3: Runtime Image
+FROM alpine:latest
+WORKDIR /app
+RUN apk --no-cache add ca-certificates
+COPY --from=backend-builder /app/uptime /app/uptime
+COPY --from=frontend-builder /app/web/dist /app/web/dist
+
+EXPOSE 8080
+CMD ["/app/uptime"]
