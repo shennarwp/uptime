@@ -214,73 +214,49 @@ jobs:
           github-pat: ${{ secrets.WORKFLOW_TOKEN }}
 
 
-#  deploy-oracle:
-#    name: Deploy to oracle vm
-#    environment:
-#      name: oracle
-#      url: https://shenna.rwpiri.com
-#    runs-on: ubuntu-latest
-#    needs: [build-and-push]
-#    env:
-#      DEPLOYED_TAG: ${{ needs.build-and-push.outputs.tag }}
-#    # Only run on tag pushes matching YYYY.MM.DD-freetext
-#    if: github.event_name == 'push' && github.ref_type == 'tag' && needs.build-and-push.outputs.is_tag_deploy == 'true'
-#
-#    steps:
-#      - name: Deploy to oracle
-#        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
-#        with:
-#          host: ${{ secrets.RUIPRYUX_HOST }}
-#          username: ${{ secrets.RUIPRYUX_USERNAME }}
-#          key: ${{ secrets.KEY }}
-#          port: ${{ secrets.RUIPRYUX_PORT }}
-#          script: |
-#            docker stop uptime || true \
-#            && docker rm uptime || true \
-#            && docker run \
-#                 --detach \
-#                 --net nginx \
-#                 --name uptime \
-#                 --restart always \
-#                 --expose 80 \
-#                 ${{ secrets.DOCKERHUB_USERNAME }}/uptime:busybox-${{ env.DEPLOYED_TAG }} \
-#            && docker container restart nginx \
-#            && docker image prune --force
+  deploy-oracle:
+    name: Deploy to oracle vm
+    environment:
+      name: oracle
+      url: https://uptime.rwpiri.com
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    env:
+      DEPLOYED_TAG: ${{ needs.build-and-push.outputs.tag }}
 
-#  healthcheck-staging:
-#    name: Check staging url after deployment
-#    runs-on: ubuntu-latest
-#    needs: [build-and-push, deploy-hetzner]
-#
-#    steps:
-#      - name: Check the deployed service URL(s)
-#        uses: jtalk/url-health-check-action@e7d5ebdc9027fbf494d2d034f3e8fc78f8b7a2b9 # v5
-#        with:
-#          url: https://shennarwp.com/cv-staging/
-#          follow-redirect: false
-#          max-attempts: 5
-#          retry-delay: 10s
-#          retry-all: false
-#
-#  healthcheck-all:
-#    name: Check all urls after deployment
-#    runs-on: ubuntu-latest
-#    needs:
-#      [
-#        build-and-push,
-#        deploy-azure-container-apps,
-#        deploy-hetzner,
-#        deploy-oracle,
-#        deploy-azure-static-web,
-#      ]
-#    if: github.event_name == 'push' && (github.ref_type == 'branch' || needs.build-and-push.outputs.is_tag_deploy == 'true')
-#
-#    steps:
-#      - name: Check the deployed service URL(s)
-#        uses: jtalk/url-health-check-action@e7d5ebdc9027fbf494d2d034f3e8fc78f8b7a2b9 # v5
-#        with:
-#          url: https://shennarwp.com/cv-staging/|https://resume.graysand-8af4e4eb.germanywestcentral.azurecontainerapps.io/|https://victorious-moss-02a509500.7.azurestaticapps.net/|https://shenna.rwpiri.com
-#          follow-redirect: false
-#          max-attempts: 5
-#          retry-delay: 10s
-#          retry-all: false
+    steps:
+      - name: Deploy to oracle
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
+        with:
+          host: ${{ secrets.RUIPRYUX_HOST }}
+          username: ${{ secrets.RUIPRYUX_USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.RUIPRYUX_PORT }}
+          script: |
+            docker stop uptime || true \
+            && docker rm uptime || true \
+            && docker run \
+                 --detach \
+                 --net nginx \
+                 --name uptime \
+                 --restart always \
+                 -v ~/uptime/uptime.db:/app/uptime.db
+                 --expose 80 \
+                 ${{ secrets.DOCKERHUB_USERNAME }}/uptime:alpine-${{ env.DEPLOYED_TAG }} \
+            && docker container restart nginx \
+            && docker image prune --force
+
+  healthcheck:
+    name: Check staging url after deployment
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-oracle]
+
+    steps:
+      - name: Check the deployed service URL(s)
+        uses: jtalk/url-health-check-action@e7d5ebdc9027fbf494d2d034f3e8fc78f8b7a2b9 # v5
+        with:
+          url: https://uptime.rwpiri.com
+          follow-redirect: false
+          max-attempts: 5
+          retry-delay: 10s
+          retry-all: false
