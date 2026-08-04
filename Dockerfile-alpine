@@ -18,6 +18,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/uptime ./cmd/uptime/main.go
 FROM nginx:alpine
 WORKDIR /app
 
+LABEL org.opencontainers.image.title="uptime" \
+      org.opencontainers.image.description="Lightweight self-hosted uptime monitoring application (Go backend, React frontend). Live version can be seen on https://uptime.rwpiri.com" \
+      org.opencontainers.image.url="https://github.com/shennarwp/uptime" \
+      org.opencontainers.image.source="https://github.com/shennarwp/uptime" \
+      org.opencontainers.image.documentation="https://github.com/shennarwp/uptime/blob/main/README.md" \
+      org.opencontainers.image.authors="Shenna Risqianto Wilfred Piri <shenna@rwpiri.com>" \
+      org.opencontainers.image.vendor="shennarwp"
+
 RUN apk --no-cache add ca-certificates
 
 # Copy custom Nginx configuration
