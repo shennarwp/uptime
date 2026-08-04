@@ -68,9 +68,55 @@ A lightweight, self-hosted uptime monitoring application featuring a Go backend 
 
 ---
 
+### Docker
+
+Build the image (multi-stage; uses `nginx:alpine` as the runtime base):
+
+```bash
+docker build -f Dockerfile-alpine -t shennarwp/uptime:alpine-latest .
+```
+
+Run the container. The database is persisted in a mounted directory (see `UPTIME_DB_PATH` below), so it survives container restarts and removal:
+
+```bash
+docker run --detach \
+  --name uptime \
+  --restart always \
+  -v ~/uptime/data:/app/data \
+  --expose 80 \
+  shennarwp/uptime:alpine-latest
+```
+
+Notes:
+- The image exposes port `80` (nginx serving the React frontend and proxying `/api` to the Go backend on `:8080`).
+- `UPTIME_DB_PATH` defaults to `/app/data/uptime.db`; the SQLite database (including its WAL files) lives in the mounted volume, so mount a directory (not a single file) or data will be lost on container recreation.
+- Override the database path at runtime with `-e UPTIME_DB_PATH=/some/other/path.db`.
+
+---
+
+## API Documentation
+
+The backend exposes an OpenAPI (Swagger) specification generated from Go annotations using [swaggo/swag](https://github.com/swaggo/swag).
+
+- **Spec files:** `api/swagger.json` and `api/swagger.yaml`
+- **Interactive UI:** served by the backend at `http://localhost:8080/swagger/` (Swagger UI) when running the Go server.
+
+### Regenerating the spec
+
+The spec is generated from `swagger` comment annotations in the code (`cmd/uptime/main.go`, `internal/handler/`, `internal/database/models.go`). After changing the API, regenerate with:
+
+```bash
+go tool swag init -g cmd/uptime/main.go --output api
+```
+
+Commit the regenerated `api/` files together with your API changes.
+
+---
+
 ## Project Structure
 
 - `cmd/uptime/` - Application entry point (`main.go`)
+- `api/` - Generated OpenAPI spec (`swagger.json`, `swagger.yaml`, `docs.go`)
 - `internal/database/` - SQLite connection, database models, migrations, and target repository
 - `internal/service/` - Target and polling services
 - `internal/handler/` - HTTP API handlers
