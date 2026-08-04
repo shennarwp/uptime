@@ -1,9 +1,6 @@
 name: Daily image cleanup dockerhub and ghcr
 
 on:
-  push:
-    branches:
-      - 'fix/cleanup' # TODO DELETE
   schedule:
     - cron: '30 1 * * *'
   workflow_dispatch:
