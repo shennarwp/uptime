@@ -39,7 +39,7 @@ jobs:
           go-version: '1.26.5'
 
       - name: Test go
-        uses: robherley/go-test-action@v1
+        uses: robherley/go-test-action@2f859e0c8769d755d3174eecb9af8f64660827f3 # v1
         with:
           testArguments: '-coverprofile=coverage.txt ./...'
 
