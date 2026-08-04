@@ -28,7 +28,7 @@ jobs:
       - name: Clean ghcr
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
-          package: resume
+          package: uptime
           use-regex: true
           skip-regex-checks: true
           exclude-tags: ^(?:alpine-)?[0-9]{4}\.[0-9]{2}\.[0-9]{2}(-[^\s]+)?$
