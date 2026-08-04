@@ -70,3 +70,68 @@ func TestPollingService_PingAndPoll(t *testing.T) {
 	go pollingSvc.Start(ctx)
 	<-ctx.Done()
 }
+
+func TestPollingService_Resync(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "uptime_poll_resync_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := database.Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	repo := database.NewTargetRepository(db)
+	target := &database.Target{
+		Name:     "Resync Target",
+		URL:      "http://example.com",
+		Schedule: "@every 1h",
+	}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatalf("failed to create target: %v", err)
+	}
+
+	pollingSvc := NewPollingService(repo)
+
+	if err := pollingSvc.sync(); err != nil {
+		t.Fatalf("failed to sync: %v", err)
+	}
+	if entry, ok := pollingSvc.entries[target.ID]; !ok || entry.schedule != "@every 1h" {
+		t.Fatalf("expected entry for target %d to be registered with @every 1h", target.ID)
+	}
+	baseCount := len(pollingSvc.entries) - 1
+
+	updater, err := database.Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open db for update: %v", err)
+	}
+	_, err = updater.Exec("UPDATE targets SET schedule = ? WHERE id = ?", "@every 5m", target.ID)
+	updater.Close()
+	if err != nil {
+		t.Fatalf("failed to update schedule: %v", err)
+	}
+
+	if err := pollingSvc.sync(); err != nil {
+		t.Fatalf("failed to sync: %v", err)
+	}
+	if len(pollingSvc.entries) != baseCount+1 {
+		t.Fatalf("expected %d entries after reschedule, got %d", baseCount+1, len(pollingSvc.entries))
+	}
+	if entry := pollingSvc.entries[target.ID]; entry == nil || entry.schedule != "@every 5m" {
+		t.Fatalf("expected rescheduled entry with @every 5m, got %+v", pollingSvc.entries[target.ID])
+	}
+
+	if err := repo.DeleteTarget(target.ID); err != nil {
+		t.Fatalf("failed to delete target: %v", err)
+	}
+	if err := pollingSvc.sync(); err != nil {
+		t.Fatalf("failed to sync: %v", err)
+	}
+	if len(pollingSvc.entries) != baseCount {
+		t.Fatalf("expected %d entries after deletion, got %d", baseCount, len(pollingSvc.entries))
+	}
+}
