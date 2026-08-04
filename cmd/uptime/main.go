@@ -9,7 +9,17 @@ import (
 	"uptime/internal/database"
 	"uptime/internal/handler"
 	"uptime/internal/service"
+
+	_ "uptime/api"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
+
+// @title Uptime Monitor API
+// @version 1.0
+// @description Lightweight self-hosted uptime monitoring application API.
+// @host localhost:80
+// @BasePath /
 
 func main() {
 	dbPath := os.Getenv("UPTIME_DB_PATH")
@@ -36,6 +46,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/targets", h.GetTargets)
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	log.Println("listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
