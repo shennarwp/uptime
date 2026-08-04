@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { TruncatedUrl } from './TruncatedUrl';
 import { CheckHistoryBar } from './CheckHistoryBar';
 
@@ -24,15 +25,22 @@ type TargetWithChecks = {
 export function TargetCard({
   target,
   isHighlighted,
+  onUpdate,
 }: {
   target: TargetWithChecks;
   isHighlighted: boolean;
+  onUpdate: (id: number, name: string, schedule: string) => Promise<void>;
 }) {
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
   const isUp = lastCheck ? lastCheck.is_up : false;
   const lastCheckTime = lastCheck
     ? new Date(lastCheck.checked_at).toLocaleString()
     : 'No checks yet';
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [name, setName] = useState(target.name);
+  const [schedule, setSchedule] = useState(target.schedule);
+  const [saving, setSaving] = useState(false);
 
   let cardClass = 'target-card';
   if (lastCheck) {
@@ -51,10 +59,33 @@ export function TargetCard({
     badgeClass += ' unknown';
   }
 
+  const openEdit = () => {
+    setName(target.name);
+    setSchedule(target.schedule);
+    setShowEdit(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onUpdate(target.id, name, schedule);
+      setShowEdit(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div id={`target-${target.id}`} className={cardClass}>
       <div className="target-header">
-        <h3 className="target-title">{target.name}</h3>
+        <div className="target-title-row">
+          <h3 className="target-title">{target.name}</h3>
+          <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
+            Edit
+          </button>
+        </div>
         <TruncatedUrl url={target.url} />
       </div>
 
@@ -76,6 +107,49 @@ export function TargetCard({
       </div>
 
       <CheckHistoryBar checks={target.checks} />
+
+      {showEdit && (
+        <div className="modal-overlay" onClick={() => !saving && setShowEdit(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Edit Target</h3>
+            <label className="modal-label">
+              Name
+              <input
+                className="modal-input"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label className="modal-label">
+              Schedule
+              <input
+                className="modal-input"
+                type="text"
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+                placeholder="e.g. 0 0 */3 * * *"
+              />
+            </label>
+            <div className="modal-actions">
+              <button
+                className="modal-btn cancel"
+                onClick={() => setShowEdit(false)}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-btn save"
+                onClick={handleSave}
+                disabled={saving || !name.trim() || !schedule.trim()}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

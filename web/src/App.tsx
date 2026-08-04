@@ -52,6 +52,19 @@ function App() {
     }, 1000);
   };
 
+  const handleUpdateTarget = async (id: number, name: string, schedule: string) => {
+    const res = await fetch(`/api/target/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, schedule }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to update target: ${res.status}`);
+    }
+    const data = await fetch('/api/targets').then((r) => r.json());
+    setTargets(data);
+  };
+
   return (
     <div className="app-container">
       <Header />
@@ -62,7 +75,12 @@ function App() {
             <p>No targets configured.</p>
           ) : (
             targets.map((t) => (
-              <TargetCard key={t.id} target={t} isHighlighted={highlightedId === t.id} />
+              <TargetCard
+                key={t.id}
+                target={t}
+                isHighlighted={highlightedId === t.id}
+                onUpdate={handleUpdateTarget}
+              />
             ))
           )}
         </main>
