@@ -37,36 +37,61 @@ func Now() Timestamp {
     return Timestamp{Time: time.Now()}
 }
 
+// Target represents a monitored URL endpoint.
 type Target struct {
-    ID        int       `json:"id"`
-    Name      string    `json:"name"`
-    URL       string    `json:"url"`
-    Schedule  string    `json:"schedule"`
-    CreatedAt Timestamp `json:"created_at"`
-    UpdatedAt Timestamp `json:"updated_at"`
+	// ID is the unique identifier of the target.
+	ID int `json:"id"`
+	// Name is a human-readable label for the target.
+	Name string `json:"name"`
+	// URL is the endpoint that is being monitored.
+	URL string `json:"url"`
+	// Schedule is the cron expression used for polling.
+	Schedule string `json:"schedule"`
+	// CreatedAt is when the target was created.
+	CreatedAt Timestamp `json:"created_at" swaggertype:"primitive,string"`
+	// UpdatedAt is when the target was last updated.
+	UpdatedAt Timestamp `json:"updated_at" swaggertype:"primitive,string"`
 }
 
+// TargetWithChecks is a target together with its most recent checks.
 type TargetWithChecks struct {
-    Target
-    Checks []Check `json:"checks"`
+	Target
+	// Checks contains the recent health check results for the target.
+	Checks []Check `json:"checks"`
 }
 
+// Check is a single health check result for a target.
 type Check struct {
-    ID             int64      `json:"id"`
-    TargetID       int        `json:"target_id"`
-    StatusCode     *int       `json:"status_code,omitempty"`
-    ResponseTimeMS *int       `json:"response_time_ms,omitempty"`
-    IsUp           bool       `json:"is_up"`
-    ErrorMessage   *string    `json:"error_message,omitempty"`
-    CheckedAt      Timestamp  `json:"checked_at"`
+	// ID is the unique identifier of the check.
+	ID int64 `json:"id"`
+	// TargetID references the target this check belongs to.
+	TargetID int `json:"target_id"`
+	// StatusCode is the HTTP status code returned by the endpoint, if any.
+	StatusCode *int `json:"status_code,omitempty"`
+	// ResponseTimeMS is the response time in milliseconds, if any.
+	ResponseTimeMS *int `json:"response_time_ms,omitempty"`
+	// IsUp indicates whether the target was reachable.
+	IsUp bool `json:"is_up"`
+	// ErrorMessage contains the error message when the check failed, if any.
+	ErrorMessage *string `json:"error_message,omitempty"`
+	// CheckedAt is when the check was performed.
+	CheckedAt Timestamp `json:"checked_at" swaggertype:"primitive,string"`
 }
 
+// Incident represents a period during which a target was down.
 type Incident struct {
-    ID        int        `json:"id"`
-    TargetID  int        `json:"target_id"`
-    StartedAt Timestamp  `json:"started_at"`
-    EndedAt   *Timestamp `json:"ended_at,omitempty"`
-    Cause     *string    `json:"cause,omitempty"`
-    Resolved  bool       `json:"resolved"`
-    CreatedAt Timestamp  `json:"created_at"`
+	// ID is the unique identifier of the incident.
+	ID int `json:"id"`
+	// TargetID references the target this incident belongs to.
+	TargetID int `json:"target_id"`
+	// StartedAt is when the incident started.
+	StartedAt Timestamp `json:"started_at" swaggertype:"primitive,string"`
+	// EndedAt is when the incident ended, if it has been resolved.
+	EndedAt *Timestamp `json:"ended_at,omitempty" swaggertype:"primitive,string"`
+	// Cause describes the reason for the incident, if known.
+	Cause *string `json:"cause,omitempty"`
+	// Resolved indicates whether the incident has been resolved.
+	Resolved bool `json:"resolved"`
+	// CreatedAt is when the incident record was created.
+	CreatedAt Timestamp `json:"created_at" swaggertype:"primitive,string"`
 }

@@ -1,0 +1,82 @@
+basePath: /
+definitions:
+  database.Check:
+    properties:
+      checked_at:
+        description: CheckedAt is when the check was performed.
+        type: string
+      error_message:
+        description: ErrorMessage contains the error message when the check failed,
+          if any.
+        type: string
+      id:
+        description: ID is the unique identifier of the check.
+        type: integer
+      is_up:
+        description: IsUp indicates whether the target was reachable.
+        type: boolean
+      response_time_ms:
+        description: ResponseTimeMS is the response time in milliseconds, if any.
+        type: integer
+      status_code:
+        description: StatusCode is the HTTP status code returned by the endpoint,
+          if any.
+        type: integer
+      target_id:
+        description: TargetID references the target this check belongs to.
+        type: integer
+    type: object
+  database.TargetWithChecks:
+    properties:
+      checks:
+        description: Checks contains the recent health check results for the target.
+        items:
+          $ref: '#/definitions/database.Check'
+        type: array
+      created_at:
+        description: CreatedAt is when the target was created.
+        type: string
+      id:
+        description: ID is the unique identifier of the target.
+        type: integer
+      name:
+        description: Name is a human-readable label for the target.
+        type: string
+      schedule:
+        description: Schedule is the cron expression used for polling.
+        type: string
+      updated_at:
+        description: UpdatedAt is when the target was last updated.
+        type: string
+      url:
+        description: URL is the endpoint that is being monitored.
+        type: string
+    type: object
+host: localhost:80
+info:
+  contact: {}
+  description: Lightweight self-hosted uptime monitoring application API.
+  title: Uptime Monitor API
+  version: "1.0"
+paths:
+  /api/targets:
+    get:
+      description: Returns all monitored targets along with their most recent health
+        checks (up to 1500 per target).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of targets with recent checks
+          schema:
+            items:
+              $ref: '#/definitions/database.TargetWithChecks'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List targets with recent checks
+      tags:
+      - targets
+swagger: "2.0"
