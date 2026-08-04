@@ -132,7 +132,7 @@ jobs:
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
         with:
           subject-name: ${{ secrets.DOCKERHUB_USERNAME }}/uptime
-          subject-digest: ${{ steps.build-push-busybox.outputs.digest }}
+          subject-digest: ${{ steps.build-push-alpine.outputs.digest }}
 
       - name: Attest ghcr image
         if: github.event_name == 'push' && (github.ref_type == 'branch' || steps.check-tag.outputs.IS_TAG_DEPLOY == 'true')
