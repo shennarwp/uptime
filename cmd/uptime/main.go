@@ -46,6 +46,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/targets", h.GetTargets)
+	mux.HandleFunc("PUT /api/target/{id}", h.UpdateTarget)
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	log.Println("listening on :8080")
