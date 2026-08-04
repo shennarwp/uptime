@@ -5,13 +5,18 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"uptime/internal/database"
 	"uptime/internal/handler"
 	"uptime/internal/service"
 )
 
 func main() {
-	db, err := database.Open("./uptime.db")
+	dbPath := os.Getenv("UPTIME_DB_PATH")
+	if dbPath == "" {
+		dbPath = "./uptime.db"
+	}
+	db, err := database.Open(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}

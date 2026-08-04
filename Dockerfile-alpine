@@ -33,6 +33,8 @@ COPY --from=backend-builder /app/uptime /app/uptime
 COPY configs/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
+ENV UPTIME_DB_PATH=/app/data/uptime.db
+
 EXPOSE 80
 
 CMD ["/app/entrypoint.sh"]
