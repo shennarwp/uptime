@@ -38,13 +38,16 @@ jobs:
         with:
           go-version: '1.26.5'
 
-      - name: Setup gotestsum
-        uses: autero1/action-gotestsum@v2.0.0
-        with:
-          gotestsum_version: 1.13.0
+#      - name: Setup gotestsum
+#        uses: autero1/action-gotestsum@v2.0.0
+#        with:
+#          gotestsum_version: 1.13.0
+#
+#      - name: Interact with gotestsum
+#        run: gotestsum -- -v ./... -coverprofile=coverage.txt
 
-      - name: Interact with gotestsum
-        run: gotestsum -- -v ./... -coverprofile=coverage.txt
+      - name: Test go
+        uses: robherley/go-test-action@v1
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
