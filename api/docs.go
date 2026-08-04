@@ -15,6 +15,65 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/target/{id}": {
+            "put": {
+                "description": "Updates the name and schedule of an existing target.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "targets"
+                ],
+                "summary": "Update a target",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Target ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated target fields (name and schedule only)",
+                        "name": "target",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.UpdateTargetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated target",
+                        "schema": {
+                            "$ref": "#/definitions/database.Target"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Target not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/targets": {
             "get": {
                 "description": "Returns all monitored targets along with their most recent health checks (up to 1500 per target).",
@@ -79,6 +138,35 @@ const docTemplate = `{
                 }
             }
         },
+        "database.Target": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt is when the target was created.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the target.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Name is a human-readable label for the target.",
+                    "type": "string"
+                },
+                "schedule": {
+                    "description": "Schedule is the cron expression used for polling.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt is when the target was last updated.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL is the endpoint that is being monitored.",
+                    "type": "string"
+                }
+            }
+        },
         "database.TargetWithChecks": {
             "type": "object",
             "properties": {
@@ -111,6 +199,17 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL is the endpoint that is being monitored.",
+                    "type": "string"
+                }
+            }
+        },
+        "handler.UpdateTargetRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "schedule": {
                     "type": "string"
                 }
             }

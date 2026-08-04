@@ -26,6 +26,27 @@ definitions:
         description: TargetID references the target this check belongs to.
         type: integer
     type: object
+  database.Target:
+    properties:
+      created_at:
+        description: CreatedAt is when the target was created.
+        type: string
+      id:
+        description: ID is the unique identifier of the target.
+        type: integer
+      name:
+        description: Name is a human-readable label for the target.
+        type: string
+      schedule:
+        description: Schedule is the cron expression used for polling.
+        type: string
+      updated_at:
+        description: UpdatedAt is when the target was last updated.
+        type: string
+      url:
+        description: URL is the endpoint that is being monitored.
+        type: string
+    type: object
   database.TargetWithChecks:
     properties:
       checks:
@@ -52,6 +73,13 @@ definitions:
         description: URL is the endpoint that is being monitored.
         type: string
     type: object
+  handler.UpdateTargetRequest:
+    properties:
+      name:
+        type: string
+      schedule:
+        type: string
+    type: object
 host: localhost:80
 info:
   contact: {}
@@ -59,6 +87,45 @@ info:
   title: Uptime Monitor API
   version: "1.0"
 paths:
+  /api/target/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates the name and schedule of an existing target.
+      parameters:
+      - description: Target ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated target fields (name and schedule only)
+        in: body
+        name: target
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateTargetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated target
+          schema:
+            $ref: '#/definitions/database.Target'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: Target not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Update a target
+      tags:
+      - targets
   /api/targets:
     get:
       description: Returns all monitored targets along with their most recent health
