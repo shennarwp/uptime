@@ -47,6 +47,26 @@ func (r *TargetRepository) GetTargetByID(id int) (*Target, error) {
 	return &t, nil
 }
 
+// UpdateTarget updates the name and schedule of an existing target.
+func (r *TargetRepository) UpdateTarget(id int, name string, schedule string) error {
+	now := Now()
+	res, err := r.db.Exec(
+		"UPDATE targets SET name = ?, schedule = ?, updated_at = ? WHERE id = ?",
+		name, schedule, now, id,
+	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (r *TargetRepository) CreateTarget(t *Target) error {
 	now := Now()
 	t.CreatedAt = now

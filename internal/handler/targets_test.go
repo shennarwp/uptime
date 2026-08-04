@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"uptime/internal/database"
 	"uptime/internal/service"
@@ -74,5 +76,69 @@ func TestTargetHandler_GetTargets(t *testing.T) {
 	}
 	if !foundHandlerTarget {
 		t.Errorf("expected to find 'Handler Target Unique' in targets response")
+	}
+}
+
+func TestTargetHandler_UpdateTarget(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "uptime_handler_update_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := database.Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	repo := database.NewTargetRepository(db)
+	target := &database.Target{
+		Name:     "Old Name",
+		URL:      "http://example.com",
+		Schedule: "0 * * * * *",
+	}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatalf("failed to create target: %v", err)
+	}
+
+	svc := service.NewTargetService(repo)
+	handler := NewTargetHandler(svc)
+
+	req := httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"New Name","schedule":"0 0 */3 * * *"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec := httptest.NewRecorder()
+
+	handler.UpdateTarget(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d (body: %s)", rec.Code, rec.Body.String())
+	}
+
+	var updated database.Target
+	if err := json.NewDecoder(rec.Body).Decode(&updated); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if updated.Name != "New Name" || updated.Schedule != "0 0 */3 * * *" {
+		t.Errorf("expected updated name and schedule, got %+v", updated)
+	}
+
+	// Nonexistent target -> 404
+	req = httptest.NewRequest("PUT", "/api/target/99999", strings.NewReader(`{"name":"X","schedule":"0 * * * * *"}`))
+	req.SetPathValue("id", "99999")
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for missing target, got %d", rec.Code)
+	}
+
+	// Empty name -> 400
+	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"  ","schedule":"0 * * * * *"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty name, got %d", rec.Code)
 	}
 }
