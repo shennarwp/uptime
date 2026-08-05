@@ -27,12 +27,12 @@ function certExpiryInfo(certExpiry: Date): { label: string; warn: boolean } {
   const daysLeft = Math.ceil((certExpiry.getTime() - Date.now()) / 86400000);
   if (daysLeft < 0) {
     return {
-      label: `${certExpiry.toLocaleDateString()} (expired ${-daysLeft}d ago)`,
+      label: `expired ${-daysLeft}d ago`,
       warn: true,
     };
   }
   return {
-    label: `${certExpiry.toLocaleDateString()} (${daysLeft}d left)`,
+    label: `${daysLeft}d left`,
     warn: daysLeft <= 10,
   };
 }
