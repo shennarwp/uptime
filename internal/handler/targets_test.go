@@ -172,6 +172,15 @@ func TestTargetHandler_UpdateTarget(t *testing.T) {
 		}
 	}
 
+	// Valid 6-field cron spec -> 200
+	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"Six Field","schedule":"*/5 * * * * *"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 for 6-field schedule, got %d (body: %s)", rec.Code, rec.Body.String())
+	}
+
 	// Valid schedule with descriptor + unicode/special-char name -> 200
 	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"Östlich & co (prod)#1","schedule":"@every 5m"}`))
 	req.SetPathValue("id", strconv.Itoa(target.ID))
