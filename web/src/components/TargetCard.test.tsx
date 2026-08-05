@@ -76,6 +76,8 @@ describe('TargetCard component', () => {
     expect(screen.getByText(/Cert Expires/)).toBeInTheDocument();
     expect(screen.getByText(/^\d+d left$/)).toBeInTheDocument();
     expect(screen.queryByText(/2999/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^\d+d left$/)).not.toHaveClass('cert-warn');
+    expect(screen.getByText(/^\d+d left$/)).not.toHaveClass('cert-critical');
   });
 
   it('does not show certificate expiry when absent', () => {
@@ -84,22 +86,33 @@ describe('TargetCard component', () => {
     expect(screen.queryByText(/Cert Expires/)).not.toBeInTheDocument();
   });
 
-  it('warns when the certificate is expired', () => {
+  it('is critical when the certificate is expired', () => {
     const certTarget = { ...target, cert_expires_at: '2020-01-01T00:00:00Z' };
     render(
       <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
     );
 
-    expect(screen.getByText(/expired \d+d ago/)).toHaveClass('cert-warn');
+    expect(screen.getByText(/expired \d+d ago/)).toHaveClass('cert-critical');
   });
 
-  it('warns when the certificate expires within 10 days', () => {
+  it('is critical when the certificate expires within 10 days', () => {
     const soon = new Date(Date.now() + 5 * 86400000).toISOString();
     const certTarget = { ...target, cert_expires_at: soon };
     render(
       <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
     );
 
+    expect(screen.getByText(/\d+d left/)).toHaveClass('cert-critical');
+  });
+
+  it('warns when the certificate expires within 30 days', () => {
+    const soon = new Date(Date.now() + 20 * 86400000).toISOString();
+    const certTarget = { ...target, cert_expires_at: soon };
+    render(
+      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+    );
+
     expect(screen.getByText(/\d+d left/)).toHaveClass('cert-warn');
+    expect(screen.getByText(/\d+d left/)).not.toHaveClass('cert-critical');
   });
 });

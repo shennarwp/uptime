@@ -30,6 +30,7 @@ body {
   --status-badge-up-bg: #dcfce7;
   --status-badge-down: #991b1b;
   --status-badge-down-bg: #fee2e2;
+  --cert-warn-color: #b45309;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -49,6 +50,7 @@ body {
     --status-badge-up-bg: #166534;
     --status-badge-down: #fee2e2;
     --status-badge-down-bg: #991b1b;
+    --cert-warn-color: #fbbf24;
   }
 }
 
@@ -376,6 +378,11 @@ body {
 }
 
 .meta-value.cert-warn {
+  color: var(--cert-warn-color);
+  font-weight: bold;
+}
+
+.meta-value.cert-critical {
   color: var(--status-badge-down);
   font-weight: bold;
 }
