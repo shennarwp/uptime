@@ -72,8 +72,12 @@ func (h *TargetHandler) UpdateTarget(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Schedule) == "" {
-		http.Error(w, "name and schedule are required", http.StatusBadRequest)
+	if err := validateName(req.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateSchedule(req.Schedule); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

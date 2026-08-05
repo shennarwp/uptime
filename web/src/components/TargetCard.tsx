@@ -126,6 +126,7 @@ export function TargetCard({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                maxLength={100}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !saving && name.trim() && schedule.trim()) {
                     handleSave();
