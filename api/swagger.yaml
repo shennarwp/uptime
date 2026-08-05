@@ -28,6 +28,12 @@ definitions:
     type: object
   database.Target:
     properties:
+      cert_expires_at:
+        description: |-
+          CertExpiresAt is the NotAfter time of the TLS certificate most recently
+          observed for the target, in RFC3339 (UTC). Nil for HTTP targets or before
+          the first check observes a certificate.
+        type: string
       created_at:
         description: CreatedAt is when the target was created.
         type: string
@@ -49,6 +55,12 @@ definitions:
     type: object
   database.TargetWithChecks:
     properties:
+      cert_expires_at:
+        description: |-
+          CertExpiresAt is the NotAfter time of the TLS certificate most recently
+          observed for the target, in RFC3339 (UTC). Nil for HTTP targets or before
+          the first check observes a certificate.
+        type: string
       checks:
         description: Checks contains the recent health check results for the target.
         items:

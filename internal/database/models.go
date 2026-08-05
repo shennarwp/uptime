@@ -1,40 +1,40 @@
 package database
 
 import (
-    "database/sql/driver"
-    "fmt"
-    "time"
+	"database/sql/driver"
+	"fmt"
+	"time"
 )
 
 type Timestamp struct {
-    time.Time
+	time.Time
 }
 
 func (t *Timestamp) Scan(src any) error {
-    switch v := src.(type) {
-    case time.Time:
-        t.Time = v
-        return nil
-    case string:
-        parsed, err := time.Parse("2006-01-02 15:04:05", v)
-        if err != nil {
-            return fmt.Errorf("scan timestamp: %w", err)
-        }
-        t.Time = parsed
-        return nil
-    case []byte:
-        return t.Scan(string(v))
-    default:
-        return fmt.Errorf("unsupported scan type for Timestamp: %T", src)
-    }
+	switch v := src.(type) {
+	case time.Time:
+		t.Time = v
+		return nil
+	case string:
+		parsed, err := time.Parse("2006-01-02 15:04:05", v)
+		if err != nil {
+			return fmt.Errorf("scan timestamp: %w", err)
+		}
+		t.Time = parsed
+		return nil
+	case []byte:
+		return t.Scan(string(v))
+	default:
+		return fmt.Errorf("unsupported scan type for Timestamp: %T", src)
+	}
 }
 
 func (t Timestamp) Value() (driver.Value, error) {
-    return t.Time.Format("2006-01-02 15:04:05"), nil
+	return t.Time.Format("2006-01-02 15:04:05"), nil
 }
 
 func Now() Timestamp {
-    return Timestamp{Time: time.Now()}
+	return Timestamp{Time: time.Now()}
 }
 
 // Target represents a monitored URL endpoint.
@@ -47,6 +47,10 @@ type Target struct {
 	URL string `json:"url"`
 	// Schedule is the cron expression used for polling.
 	Schedule string `json:"schedule"`
+	// CertExpiresAt is the NotAfter time of the TLS certificate most recently
+	// observed for the target, in RFC3339 (UTC). Nil for HTTP targets or before
+	// the first check observes a certificate.
+	CertExpiresAt *string `json:"cert_expires_at,omitempty"`
 	// CreatedAt is when the target was created.
 	CreatedAt Timestamp `json:"created_at" swaggertype:"primitive,string"`
 	// UpdatedAt is when the target was last updated.

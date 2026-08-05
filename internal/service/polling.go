@@ -103,6 +103,22 @@ func (s *PollingService) checkCert(cs tls.ConnectionState) error {
 	return nil
 }
 
+// checkCertExpiry persists the leaf certificate's NotAfter for a target after a
+// successful check. It writes to the database only when the observed expiry
+// differs from the stored value, and it is a no-op for non-TLS targets.
+func (s *PollingService) checkCertExpiry(t database.Target, resp *http.Response) {
+	if resp.TLS == nil || len(resp.TLS.PeerCertificates) == 0 {
+		return
+	}
+	expiresAt := resp.TLS.PeerCertificates[0].NotAfter.UTC().Format(time.RFC3339)
+	if t.CertExpiresAt != nil && *t.CertExpiresAt == expiresAt {
+		return
+	}
+	if err := s.repo.UpdateCertExpiresAt(t.ID, expiresAt); err != nil {
+		log.Printf("[Polling] Error saving cert expiry for target %s (%s): %v", t.Name, t.URL, err)
+	}
+}
+
 func (s *PollingService) Start(ctx context.Context) {
 	if err := s.sync(); err != nil {
 		log.Printf("[Polling] Error resyncing targets: %v", err)
@@ -208,6 +224,8 @@ func (s *PollingService) pingTarget(t database.Target) {
 
 	statusCode := resp.StatusCode
 	isUp := statusCode < 500
+
+	s.checkCertExpiry(t, resp)
 
 	if isUp {
 		log.Printf("[Polling] Target %s (%s) - Reachable: status %d, took %dms", t.Name, t.URL, statusCode, duration)

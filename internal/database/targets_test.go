@@ -70,6 +70,36 @@ func TestTargetRepository_CRUDAndChecksAndIncidents(t *testing.T) {
 	if fetched.Name != target.Name {
 		t.Errorf("expected name %s, got %s", target.Name, fetched.Name)
 	}
+	if fetched.CertExpiresAt != nil {
+		t.Errorf("expected cert_expires_at to be nil for a new target, got %v", *fetched.CertExpiresAt)
+	}
+
+	// Test UpdateCertExpiresAt
+	expiry := "2026-09-04T15:40:22Z"
+	if err := repo.UpdateCertExpiresAt(target.ID, expiry); err != nil {
+		t.Fatalf("failed to update cert expiry: %v", err)
+	}
+	fetched, err = repo.GetTargetByID(target.ID)
+	if err != nil {
+		t.Fatalf("failed to get target after cert expiry update: %v", err)
+	}
+	if fetched.CertExpiresAt == nil || *fetched.CertExpiresAt != expiry {
+		t.Errorf("expected cert_expires_at %s, got %v", expiry, fetched.CertExpiresAt)
+	}
+	targets, err = repo.GetTargets()
+	if err != nil {
+		t.Fatalf("failed to get targets after cert expiry update: %v", err)
+	}
+	foundExpiry := false
+	for _, t := range targets {
+		if t.ID == target.ID && t.CertExpiresAt != nil && *t.CertExpiresAt == expiry {
+			foundExpiry = true
+			break
+		}
+	}
+	if !foundExpiry {
+		t.Errorf("expected cert_expires_at %s in GetTargets result", expiry)
+	}
 
 	// Test CreateCheck (Up and Down)
 	statusCode := 200
