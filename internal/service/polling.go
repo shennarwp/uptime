@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +16,11 @@ type cronEntry struct {
 	id       cron.EntryID
 	schedule string
 }
+
+// certExpiryWarningDays is the threshold (inclusive) at which the poller starts
+// logging a WARNING when a target's TLS certificate has this many days or fewer
+// remaining (or has already expired).
+const certExpiryWarningDays = 10
 
 // PollingService is the background worker that runs the health checks.
 //
@@ -49,15 +55,52 @@ type PollingService struct {
 }
 
 func NewPollingService(repo *database.TargetRepository) *PollingService {
-	return &PollingService{
-		repo: repo,
-		client: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+	s := &PollingService{
+		repo:           repo,
 		cron:           cron.New(cron.WithSeconds()),
 		entries:        make(map[int]*cronEntry),
 		resyncInterval: 30 * time.Second,
 	}
+	s.client = &http.Client{
+		Timeout: 60 * time.Second,
+		Transport: &http.Transport{
+			// TLS chain/hostname verification is skipped so that expired
+			// certificates can still be observed and reported by checkCert.
+			//nolint:gosec
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+				VerifyConnection:   s.checkCert,
+			},
+		},
+	}
+	return s
+}
+
+// checkCert logs the remaining validity of the peer's leaf certificate. A
+// WARNING is emitted when the certificate expires within certExpiryWarningDays
+// (inclusive) or has already expired. It never rejects the connection, since the
+// poller's job is to observe the target (including its cert expiry).
+func (s *PollingService) checkCert(cs tls.ConnectionState) error {
+	if len(cs.PeerCertificates) == 0 {
+		return nil
+	}
+	cert := cs.PeerCertificates[0]
+	remaining := time.Until(cert.NotAfter)
+	expiry := cert.NotAfter.Format(time.RFC3339)
+
+	if remaining <= 0 {
+		daysExpired := int(-remaining.Hours() / 24)
+		log.Printf("[Polling] WARNING TLS cert for %s expired %d days ago (%s)", cs.ServerName, daysExpired, expiry)
+		return nil
+	}
+
+	daysLeft := int(remaining.Hours() / 24)
+	if daysLeft <= certExpiryWarningDays {
+		log.Printf("[Polling] WARNING TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
+	} else {
+		log.Printf("[Polling] TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
+	}
+	return nil
 }
 
 func (s *PollingService) Start(ctx context.Context) {
