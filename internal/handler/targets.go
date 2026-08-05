@@ -58,6 +58,7 @@ func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid request"
 // @Failure 404 {string} string "Target not found"
 // @Failure 500 {string} string "Internal server error"
+// @Security BearerAuth
 // @Router /api/target/{id} [put]
 func (h *TargetHandler) UpdateTarget(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))

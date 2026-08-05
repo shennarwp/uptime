@@ -15,8 +15,35 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Checks whether the presented bearer token is valid. Returns 200 when valid, 401 otherwise.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify API token",
+                "responses": {
+                    "200": {
+                        "description": "Token is valid"
+                    },
+                    "401": {
+                        "description": "Token is invalid"
+                    }
+                }
+            }
+        },
         "/api/target/{id}": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates the name and schedule of an existing target.",
                 "consumes": [
                     "application/json"
@@ -213,6 +240,13 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

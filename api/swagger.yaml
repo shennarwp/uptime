@@ -87,6 +87,20 @@ info:
   title: Uptime Monitor API
   version: "1.0"
 paths:
+  /api/auth/verify:
+    post:
+      description: Checks whether the presented bearer token is valid. Returns 200
+        when valid, 401 otherwise.
+      responses:
+        "200":
+          description: Token is valid
+        "401":
+          description: Token is invalid
+      security:
+      - BearerAuth: []
+      summary: Verify API token
+      tags:
+      - auth
   /api/target/{id}:
     put:
       consumes:
@@ -123,6 +137,8 @@ paths:
           description: Internal server error
           schema:
             type: string
+      security:
+      - BearerAuth: []
       summary: Update a target
       tags:
       - targets
@@ -146,4 +162,9 @@ paths:
       summary: List targets with recent checks
       tags:
       - targets
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
