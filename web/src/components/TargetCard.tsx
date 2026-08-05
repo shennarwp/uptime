@@ -23,17 +23,17 @@ type TargetWithChecks = {
   checks: Check[];
 };
 
-function certExpiryInfo(certExpiry: Date): { label: string; warn: boolean } {
+function certExpiryInfo(certExpiry: Date): { label: string; level: 'ok' | 'warn' | 'critical' } {
   const daysLeft = Math.ceil((certExpiry.getTime() - Date.now()) / 86400000);
   if (daysLeft < 0) {
     return {
       label: `expired ${-daysLeft}d ago`,
-      warn: true,
+      level: 'critical',
     };
   }
   return {
     label: `${daysLeft}d left`,
-    warn: daysLeft <= 10,
+    level: daysLeft <= 10 ? 'critical' : daysLeft <= 30 ? 'warn' : 'ok',
   };
 }
 
@@ -132,7 +132,9 @@ export function TargetCard({
         {certInfo && (
           <div>
             <span className="meta-label">Cert Expires: </span>
-            <span className={`meta-value${certInfo.warn ? ' cert-warn' : ''}`}>
+            <span
+              className={`meta-value${certInfo.level !== 'ok' ? ` cert-${certInfo.level}` : ''}`}
+            >
               {certInfo.label}
             </span>
           </div>
