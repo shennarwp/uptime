@@ -74,7 +74,8 @@ describe('TargetCard component', () => {
     );
 
     expect(screen.getByText(/Cert Expires/)).toBeInTheDocument();
-    expect(screen.getByText(/2999/)).toBeInTheDocument();
+    expect(screen.getByText(/^\d+d left$/)).toBeInTheDocument();
+    expect(screen.queryByText(/2999/)).not.toBeInTheDocument();
   });
 
   it('does not show certificate expiry when absent', () => {
