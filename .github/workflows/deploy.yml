@@ -202,12 +202,13 @@ jobs:
           script: |
             docker stop uptime || true \
             && docker rm uptime || true \
-            && docker run \
+            &&             docker run \
                  --detach \
                  --net nginx \
                  --name uptime \
                  --restart always \
                  --volume ~/uptime/data:/app/data \
+                 --env UPTIME_API_TOKEN=${{ secrets.UPTIME_API_TOKEN }} \
                  --expose 80 \
                  ${{ secrets.DOCKERHUB_USERNAME }}/uptime:alpine-${{ env.DEPLOYED_TAG }} \
             && docker container restart nginx \
