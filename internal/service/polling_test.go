@@ -141,6 +141,120 @@ func TestPollingService_Resync(t *testing.T) {
 	}
 }
 
+func TestPollingService_PersistsCertExpiry(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	tmpDir, err := os.MkdirTemp("", "uptime_poll_tls_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := database.Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	repo := database.NewTargetRepository(db)
+	if err := repo.CreateTarget(&database.Target{
+		Name:     "TLS Target",
+		URL:      ts.URL,
+		Schedule: "@every 1m",
+	}); err != nil {
+		t.Fatalf("failed to create target: %v", err)
+	}
+
+	svc := NewPollingService(repo)
+	targets, err := repo.GetTargets()
+	if err != nil {
+		t.Fatalf("failed to get targets: %v", err)
+	}
+	var tlsTarget *database.Target
+	for i := range targets {
+		if targets[i].URL == ts.URL {
+			tlsTarget = &targets[i]
+			break
+		}
+	}
+	if tlsTarget == nil {
+		t.Fatalf("created target not found in GetTargets result")
+	}
+
+	svc.pingTarget(*tlsTarget)
+
+	expected := ts.Certificate().NotAfter.UTC().Format(time.RFC3339)
+	stored, err := repo.GetTargetByID(tlsTarget.ID)
+	if err != nil {
+		t.Fatalf("failed to get target: %v", err)
+	}
+	if stored.CertExpiresAt == nil {
+		t.Fatalf("expected cert_expires_at to be set after TLS check, got nil")
+	}
+	if *stored.CertExpiresAt != expected {
+		t.Errorf("expected cert_expires_at %s, got %s", expected, *stored.CertExpiresAt)
+	}
+}
+
+func TestPollingService_DoesNotSetCertExpiryForHTTP(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	tmpDir, err := os.MkdirTemp("", "uptime_poll_http_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := database.Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	repo := database.NewTargetRepository(db)
+	if err := repo.CreateTarget(&database.Target{
+		Name:     "HTTP Target",
+		URL:      ts.URL,
+		Schedule: "@every 1m",
+	}); err != nil {
+		t.Fatalf("failed to create target: %v", err)
+	}
+
+	svc := NewPollingService(repo)
+	targets, err := repo.GetTargets()
+	if err != nil {
+		t.Fatalf("failed to get targets: %v", err)
+	}
+	var httpTarget *database.Target
+	for i := range targets {
+		if targets[i].URL == ts.URL {
+			httpTarget = &targets[i]
+			break
+		}
+	}
+	if httpTarget == nil {
+		t.Fatalf("created target not found in GetTargets result")
+	}
+
+	svc.pingTarget(*httpTarget)
+
+	stored, err := repo.GetTargetByID(httpTarget.ID)
+	if err != nil {
+		t.Fatalf("failed to get target: %v", err)
+	}
+	if stored.CertExpiresAt != nil {
+		t.Errorf("expected cert_expires_at to stay nil for HTTP target, got %v", *stored.CertExpiresAt)
+	}
+}
+
 func TestPollingService_CheckCert(t *testing.T) {
 	svc := &PollingService{}
 	day := 24 * time.Hour

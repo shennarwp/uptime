@@ -13,8 +13,22 @@ func NewTargetRepository(db *sql.DB) *TargetRepository {
 	return &TargetRepository{db: db}
 }
 
+const targetColumns = "id, name, url, schedule, cert_expires_at, created_at, updated_at"
+
+func scanTarget(scanner interface{ Scan(dest ...any) error }) (Target, error) {
+	var t Target
+	var cert sql.NullString
+	if err := scanner.Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &cert, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		return t, err
+	}
+	if cert.Valid {
+		t.CertExpiresAt = &cert.String
+	}
+	return t, nil
+}
+
 func (r *TargetRepository) GetTargets() ([]Target, error) {
-	rows, err := r.db.Query("SELECT id, name, url, schedule, created_at, updated_at FROM targets")
+	rows, err := r.db.Query("SELECT " + targetColumns + " FROM targets")
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +41,8 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 
 	var targets []Target
 	for rows.Next() {
-		var t Target
-		if err := rows.Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		t, err := scanTarget(rows)
+		if err != nil {
 			return nil, err
 		}
 		targets = append(targets, t)
@@ -37,14 +51,17 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 }
 
 func (r *TargetRepository) GetTargetByID(id int) (*Target, error) {
-	var t Target
-	err := r.db.QueryRow(
-		"SELECT id, name, url, schedule, created_at, updated_at FROM targets WHERE id = ?", id,
-	).Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &t.CreatedAt, &t.UpdatedAt)
+	t, err := scanTarget(r.db.QueryRow("SELECT "+targetColumns+" FROM targets WHERE id = ?", id))
 	if err != nil {
 		return nil, err
 	}
 	return &t, nil
+}
+
+// UpdateCertExpiresAt stores the TLS certificate expiry observed for a target.
+func (r *TargetRepository) UpdateCertExpiresAt(id int, expiresAt string) error {
+	_, err := r.db.Exec("UPDATE targets SET cert_expires_at = ? WHERE id = ?", expiresAt, id)
+	return err
 }
 
 // UpdateTarget updates the name and schedule of an existing target.

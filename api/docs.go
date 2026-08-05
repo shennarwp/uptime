@@ -168,6 +168,10 @@ const docTemplate = `{
         "database.Target": {
             "type": "object",
             "properties": {
+                "cert_expires_at": {
+                    "description": "CertExpiresAt is the NotAfter time of the TLS certificate most recently\nobserved for the target, in RFC3339 (UTC). Nil for HTTP targets or before\nthe first check observes a certificate.",
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "CreatedAt is when the target was created.",
                     "type": "string"
@@ -197,6 +201,10 @@ const docTemplate = `{
         "database.TargetWithChecks": {
             "type": "object",
             "properties": {
+                "cert_expires_at": {
+                    "description": "CertExpiresAt is the NotAfter time of the TLS certificate most recently\nobserved for the target, in RFC3339 (UTC). Nil for HTTP targets or before\nthe first check observes a certificate.",
+                    "type": "string"
+                },
                 "checks": {
                     "description": "Checks contains the recent health check results for the target.",
                     "type": "array",
