@@ -28,6 +28,9 @@ function App() {
   const [targets, setTargets] = useState<TargetWithChecks[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
+    () => localStorage.getItem('uptimeApiToken') !== null,
+  );
 
   useEffect(() => {
     fetch('/api/targets')
@@ -52,13 +55,39 @@ function App() {
     }, 1000);
   };
 
+  const handleLogin = async (token: string): Promise<boolean> => {
+    const res = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      return false;
+    }
+    localStorage.setItem('uptimeApiToken', token);
+    setIsLoggedIn(true);
+    return true;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('uptimeApiToken');
+    setIsLoggedIn(false);
+  };
+
   const handleUpdateTarget = async (id: number, name: string, schedule: string) => {
+    const token = localStorage.getItem('uptimeApiToken') ?? '';
     const res = await fetch(`/api/target/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ name, schedule }),
     });
     if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem('uptimeApiToken');
+        setIsLoggedIn(false);
+      }
       throw new Error(`Failed to update target: ${res.status}`);
     }
     const data = await fetch('/api/targets').then((r) => r.json());
@@ -67,7 +96,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header />
+      <Header isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} />
       <div className="app-body">
         <Sidebar targets={targets} selectedId={selectedId} onSelect={handleSelect} />
         <main className="app-main">
@@ -79,6 +108,7 @@ function App() {
                 key={t.id}
                 target={t}
                 isHighlighted={highlightedId === t.id}
+                canEdit={isLoggedIn}
                 onUpdate={handleUpdateTarget}
               />
             ))

@@ -24,17 +24,23 @@ describe('TargetCard component', () => {
 
   it('renders target name, url, status, and response time', () => {
     // @ts-expect-error Timestamp type compatibility in mock test
-    render(<TargetCard target={target} isHighlighted={false} onUpdate={vi.fn()} />);
+    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={vi.fn()} />);
 
     expect(screen.getByText('Example Target')).toBeInTheDocument();
     expect(screen.getByText('UP')).toBeInTheDocument();
     expect(screen.getByText('45ms')).toBeInTheDocument();
   });
 
+  it('hides the edit button when not logged in', () => {
+    // @ts-expect-error Timestamp type compatibility in mock test
+    render(<TargetCard target={target} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+  });
+
   it('opens the edit popup and calls onUpdate on save', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     // @ts-expect-error Timestamp type compatibility in mock test
-    render(<TargetCard target={target} isHighlighted={false} onUpdate={onUpdate} />);
+    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
 
@@ -53,7 +59,7 @@ describe('TargetCard component', () => {
   it('closes the edit popup when cancel is clicked', () => {
     const onUpdate = vi.fn();
     // @ts-expect-error Timestamp type compatibility in mock test
-    render(<TargetCard target={target} isHighlighted={false} onUpdate={onUpdate} />);
+    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
