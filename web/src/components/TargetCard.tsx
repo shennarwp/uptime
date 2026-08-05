@@ -25,10 +25,12 @@ type TargetWithChecks = {
 export function TargetCard({
   target,
   isHighlighted,
+  canEdit,
   onUpdate,
 }: {
   target: TargetWithChecks;
   isHighlighted: boolean;
+  canEdit: boolean;
   onUpdate: (id: number, name: string, schedule: string) => Promise<void>;
 }) {
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
@@ -41,6 +43,7 @@ export function TargetCard({
   const [name, setName] = useState(target.name);
   const [schedule, setSchedule] = useState(target.schedule);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   let cardClass = 'target-card';
   if (lastCheck) {
@@ -62,16 +65,18 @@ export function TargetCard({
   const openEdit = () => {
     setName(target.name);
     setSchedule(target.schedule);
+    setError(null);
     setShowEdit(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       await onUpdate(target.id, name, schedule);
       setShowEdit(false);
     } catch (e) {
-      console.error(e);
+      setError(e instanceof Error ? e.message : 'Failed to update target');
     } finally {
       setSaving(false);
     }
@@ -82,9 +87,11 @@ export function TargetCard({
       <div className="target-header">
         <div className="target-title-row">
           <h3 className="target-title">{target.name}</h3>
-          <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
-            Edit
-          </button>
+          {canEdit && (
+            <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
+              Edit
+            </button>
+          )}
         </div>
         <TruncatedUrl url={target.url} />
       </div>
@@ -119,6 +126,11 @@ export function TargetCard({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !saving && name.trim() && schedule.trim()) {
+                    handleSave();
+                  }
+                }}
               />
             </label>
             <label className="modal-label">
@@ -128,10 +140,16 @@ export function TargetCard({
                 type="text"
                 value={schedule}
                 onChange={(e) => setSchedule(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !saving && name.trim() && schedule.trim()) {
+                    handleSave();
+                  }
+                }}
                 placeholder="e.g. 0 0 */3 * * *"
               />
             </label>
             <div className="modal-actions">
+              {error && <span className="modal-error">{error}</span>}
               <button
                 className="modal-btn cancel"
                 onClick={() => setShowEdit(false)}

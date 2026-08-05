@@ -69,6 +69,34 @@ body {
   padding: 16px;
   font-size: 22px;
   font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.header-btn:hover {
+  background-color: var(--active-bg);
 }
 
 .app-body {
@@ -235,6 +263,19 @@ body {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 16px;
+}
+
+.modal-error {
+  color: var(--status-badge-down);
+  font-size: 13px;
+  margin-right: auto;
+  align-self: center;
+}
+
+.modal-error-text {
+  color: var(--status-badge-down);
+  font-size: 13px;
+  margin: 0 0 4px;
 }
 
 .modal-btn {
