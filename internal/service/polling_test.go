@@ -1,11 +1,16 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 	"uptime/internal/database"
@@ -133,5 +138,73 @@ func TestPollingService_Resync(t *testing.T) {
 	}
 	if len(pollingSvc.entries) != baseCount {
 		t.Fatalf("expected %d entries after deletion, got %d", baseCount, len(pollingSvc.entries))
+	}
+}
+
+func TestPollingService_CheckCert(t *testing.T) {
+	svc := &PollingService{}
+	day := 24 * time.Hour
+
+	tests := []struct {
+		name     string
+		notAfter time.Time
+		wantLog  string
+		wantWarn bool
+	}{
+		{
+			name:     "no peer certificates",
+			notAfter: time.Time{},
+			wantLog:  "",
+		},
+		{
+			name:     "far from expiry",
+			notAfter: time.Now().Add(30*day + 2*time.Hour),
+			wantLog:  "expires in 30 days",
+		},
+		{
+			name:     "within warning threshold",
+			notAfter: time.Now().Add(5*day + 2*time.Hour),
+			wantLog:  "expires in 5 days",
+			wantWarn: true,
+		},
+		{
+			name:     "already expired",
+			notAfter: time.Now().Add(-3*day - 2*time.Hour),
+			wantLog:  "expired 3 days ago",
+			wantWarn: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defer log.SetOutput(os.Stderr)
+
+			cs := tls.ConnectionState{}
+			if !tc.notAfter.IsZero() {
+				cs = tls.ConnectionState{
+					ServerName: "example.com",
+					PeerCertificates: []*x509.Certificate{
+						{NotAfter: tc.notAfter},
+					},
+				}
+			}
+
+			if err := svc.checkCert(cs); err != nil {
+				t.Fatalf("checkCert returned an error: %v", err)
+			}
+
+			out := buf.String()
+			if tc.wantLog != "" && !strings.Contains(out, tc.wantLog) {
+				t.Errorf("expected log to contain %q, got %q", tc.wantLog, out)
+			}
+			if tc.wantWarn && !strings.Contains(out, "WARNING") {
+				t.Errorf("expected a WARNING in log, got %q", out)
+			}
+			if !tc.wantWarn && strings.Contains(out, "WARNING") {
+				t.Errorf("did not expect a WARNING, got %q", out)
+			}
+		})
 	}
 }
