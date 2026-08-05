@@ -17,10 +17,25 @@ type TargetWithChecks = {
   name: string;
   url: string;
   schedule: string;
+  cert_expires_at?: string;
   created_at: string;
   updated_at: string;
   checks: Check[];
 };
+
+function certExpiryInfo(certExpiry: Date): { label: string; warn: boolean } {
+  const daysLeft = Math.ceil((certExpiry.getTime() - Date.now()) / 86400000);
+  if (daysLeft < 0) {
+    return {
+      label: `${certExpiry.toLocaleDateString()} (expired ${-daysLeft}d ago)`,
+      warn: true,
+    };
+  }
+  return {
+    label: `${certExpiry.toLocaleDateString()} (${daysLeft}d left)`,
+    warn: daysLeft <= 10,
+  };
+}
 
 export function TargetCard({
   target,
@@ -44,6 +59,9 @@ export function TargetCard({
   const [schedule, setSchedule] = useState(target.schedule);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const certExpiry = target.cert_expires_at ? new Date(target.cert_expires_at) : null;
+  const certInfo = certExpiry ? certExpiryInfo(certExpiry) : null;
 
   let cardClass = 'target-card';
   if (lastCheck) {
@@ -109,6 +127,14 @@ export function TargetCard({
           <div>
             <span className="meta-label">Response Time: </span>
             <span className="meta-value">{lastCheck.response_time_ms}ms</span>
+          </div>
+        )}
+        {certInfo && (
+          <div>
+            <span className="meta-label">Cert Expires: </span>
+            <span className={`meta-value${certInfo.warn ? ' cert-warn' : ''}`}>
+              {certInfo.label}
+            </span>
           </div>
         )}
       </div>
