@@ -1,0 +1,17 @@
+services:
+  uptime:
+    image: shennarwp/uptime:alpine-latest
+    container_name: uptime
+    restart: always
+    networks:
+      - nginx
+    environment:
+      UPTIME_API_TOKEN: ${UPTIME_API_TOKEN}
+    volumes:
+      - ~/uptime/data:/app/data
+    expose:
+      - "80"
+
+networks:
+  nginx:
+    external: true
