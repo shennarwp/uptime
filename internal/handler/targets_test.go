@@ -141,4 +141,43 @@ func TestTargetHandler_UpdateTarget(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for empty name, got %d", rec.Code)
 	}
+
+	// Name too long -> 400
+	longName := strings.Repeat("a", maxNameLength+1)
+	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"`+longName+`","schedule":"0 * * * * *"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for overly long name, got %d", rec.Code)
+	}
+
+	// Name with control character -> 400
+	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"Bad\nName","schedule":"0 * * * * *"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for control characters in name, got %d", rec.Code)
+	}
+
+	// Invalid schedule -> 400
+	for _, bad := range []string{"not-a-cron", "0 * * * *", "* * * * * * *"} {
+		req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"X","schedule":"`+bad+`"}`))
+		req.SetPathValue("id", strconv.Itoa(target.ID))
+		rec = httptest.NewRecorder()
+		handler.UpdateTarget(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected 400 for invalid schedule %q, got %d", bad, rec.Code)
+		}
+	}
+
+	// Valid schedule with descriptor + unicode/special-char name -> 200
+	req = httptest.NewRequest("PUT", "/api/target/"+strconv.Itoa(target.ID), strings.NewReader(`{"name":"Östlich & co (prod)#1","schedule":"@every 5m"}`))
+	req.SetPathValue("id", strconv.Itoa(target.ID))
+	rec = httptest.NewRecorder()
+	handler.UpdateTarget(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 for valid name/schedule, got %d (body: %s)", rec.Code, rec.Body.String())
+	}
 }

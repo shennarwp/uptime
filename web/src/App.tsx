@@ -88,7 +88,8 @@ function App() {
         localStorage.removeItem('uptimeApiToken');
         setIsLoggedIn(false);
       }
-      throw new Error(`Failed to update target: ${res.status}`);
+      const body = await res.text();
+      throw new Error(body || `Failed to update target (${res.status})`);
     }
     const data = await fetch('/api/targets').then((r) => r.json());
     setTargets(data);
