@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -52,6 +55,7 @@ type PollingService struct {
 	cron           *cron.Cron
 	entries        map[int]*cronEntry
 	resyncInterval time.Duration
+	rootPool       *x509.CertPool
 }
 
 func NewPollingService(repo *database.TargetRepository) *PollingService {
@@ -61,11 +65,16 @@ func NewPollingService(repo *database.TargetRepository) *PollingService {
 		entries:        make(map[int]*cronEntry),
 		resyncInterval: 30 * time.Second,
 	}
+	if roots, err := x509.SystemCertPool(); err == nil {
+		s.rootPool = roots
+	}
 	s.client = &http.Client{
 		Timeout: 60 * time.Second,
 		Transport: &http.Transport{
-			// TLS chain/hostname verification is skipped so that expired
-			// certificates can still be observed and reported by checkCert.
+			// InsecureSkipVerify is required so that expired certificates still
+			// complete the handshake; checkCert then performs the real chain and
+			// hostname verification, tolerating only expiry-related failures so
+			// they can be observed and reported.
 			//nolint:gosec
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -78,8 +87,11 @@ func NewPollingService(repo *database.TargetRepository) *PollingService {
 
 // checkCert logs the remaining validity of the peer's leaf certificate. A
 // WARNING is emitted when the certificate expires within certExpiryWarningDays
-// (inclusive) or has already expired. It never rejects the connection, since the
-// poller's job is to observe the target (including its cert expiry).
+// (inclusive) or has already expired. It then verifies the certificate chain
+// and hostname against the system root store, returning an error (which aborts
+// the TLS connection) for anything other than an expired or not-yet-valid
+// certificate, so those can still be observed without exposing the poller to
+// man-in-the-middle attacks.
 func (s *PollingService) checkCert(cs tls.ConnectionState) error {
 	if len(cs.PeerCertificates) == 0 {
 		return nil
@@ -91,14 +103,50 @@ func (s *PollingService) checkCert(cs tls.ConnectionState) error {
 	if remaining <= 0 {
 		daysExpired := int(-remaining.Hours() / 24)
 		log.Printf("[Polling] WARNING TLS cert for %s expired %d days ago (%s)", cs.ServerName, daysExpired, expiry)
-		return nil
+	} else {
+		daysLeft := int(remaining.Hours() / 24)
+		if daysLeft <= certExpiryWarningDays {
+			log.Printf("[Polling] WARNING TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
+		} else {
+			log.Printf("[Polling] TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
+		}
 	}
 
-	daysLeft := int(remaining.Hours() / 24)
-	if daysLeft <= certExpiryWarningDays {
-		log.Printf("[Polling] WARNING TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
-	} else {
-		log.Printf("[Polling] TLS cert for %s expires in %d days (%s)", cs.ServerName, daysLeft, expiry)
+	return s.verifyCertChain(cs)
+}
+
+// verifyCertChain validates the peer's certificate chain and hostname against
+// the system root store. Expired or not-yet-valid certificates are tolerated
+// (the expiry is already logged by checkCert); any other failure rejects the
+// connection.
+func (s *PollingService) verifyCertChain(cs tls.ConnectionState) error {
+	if len(cs.PeerCertificates) == 0 {
+		return nil
+	}
+	roots := s.rootPool
+	if roots == nil {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			return fmt.Errorf("load system root cert pool: %w", err)
+		}
+		roots = pool
+	}
+	intermediates := x509.NewCertPool()
+	for _, cert := range cs.PeerCertificates[1:] {
+		intermediates.AddCert(cert)
+	}
+	opts := x509.VerifyOptions{
+		Roots:         roots,
+		Intermediates: intermediates,
+		DNSName:       cs.ServerName,
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+	if _, err := cs.PeerCertificates[0].Verify(opts); err != nil {
+		var invalid x509.CertificateInvalidError
+		if errors.As(err, &invalid) && invalid.Reason == x509.Expired {
+			return nil
+		}
+		return err
 	}
 	return nil
 }
