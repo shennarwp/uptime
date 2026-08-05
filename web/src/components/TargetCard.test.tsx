@@ -8,8 +8,8 @@ describe('TargetCard component', () => {
     name: 'Example Target',
     url: 'https://example.com',
     schedule: '@every 1m',
-    created_at: { Time: new Date() },
-    updated_at: { Time: new Date() },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     checks: [
       {
         id: 1,
@@ -23,7 +23,6 @@ describe('TargetCard component', () => {
   };
 
   it('renders target name, url, status, and response time', () => {
-    // @ts-expect-error Timestamp type compatibility in mock test
     render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={vi.fn()} />);
 
     expect(screen.getByText('Example Target')).toBeInTheDocument();
@@ -32,14 +31,12 @@ describe('TargetCard component', () => {
   });
 
   it('hides the edit button when not logged in', () => {
-    // @ts-expect-error Timestamp type compatibility in mock test
     render(<TargetCard target={target} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
   });
 
   it('opens the edit popup and calls onUpdate on save', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
-    // @ts-expect-error Timestamp type compatibility in mock test
     render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
@@ -61,7 +58,6 @@ describe('TargetCard component', () => {
 
   it('closes the edit popup when cancel is clicked', () => {
     const onUpdate = vi.fn();
-    // @ts-expect-error Timestamp type compatibility in mock test
     render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
@@ -69,5 +65,40 @@ describe('TargetCard component', () => {
 
     expect(screen.queryByRole('textbox', { name: /^Name/ })).not.toBeInTheDocument();
     expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it('shows the certificate expiry when present', () => {
+    const certTarget = { ...target, cert_expires_at: '2999-01-01T00:00:00Z' };
+    render(
+      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+    );
+
+    expect(screen.getByText(/Cert Expires/)).toBeInTheDocument();
+    expect(screen.getByText(/2999/)).toBeInTheDocument();
+  });
+
+  it('does not show certificate expiry when absent', () => {
+    render(<TargetCard target={target} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />);
+
+    expect(screen.queryByText(/Cert Expires/)).not.toBeInTheDocument();
+  });
+
+  it('warns when the certificate is expired', () => {
+    const certTarget = { ...target, cert_expires_at: '2020-01-01T00:00:00Z' };
+    render(
+      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+    );
+
+    expect(screen.getByText(/expired \d+d ago/)).toHaveClass('cert-warn');
+  });
+
+  it('warns when the certificate expires within 10 days', () => {
+    const soon = new Date(Date.now() + 5 * 86400000).toISOString();
+    const certTarget = { ...target, cert_expires_at: soon };
+    render(
+      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+    );
+
+    expect(screen.getByText(/\d+d left/)).toHaveClass('cert-warn');
   });
 });
