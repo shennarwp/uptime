@@ -20,6 +20,10 @@ import (
 // @description Lightweight self-hosted uptime monitoring application API.
 // @host localhost:80
 // @BasePath /
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	dbPath := os.Getenv("UPTIME_DB_PATH")
@@ -46,7 +50,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/targets", h.GetTargets)
-	mux.HandleFunc("PUT /api/target/{id}", h.UpdateTarget)
+	mux.HandleFunc("POST /api/auth/verify", h.VerifyToken)
+	mux.HandleFunc("PUT /api/target/{id}", handler.RequireAPIToken(h.UpdateTarget))
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	log.Println("listening on :8080")

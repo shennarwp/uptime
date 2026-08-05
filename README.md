@@ -92,6 +92,18 @@ Notes:
 - `UPTIME_DB_PATH` defaults to `/app/data/uptime.db`; the SQLite database (including its WAL files) lives in the mounted volume, so mount a directory (not a single file) or data will be lost on container recreation.
 - Override the database path at runtime with `-e UPTIME_DB_PATH=/some/other/path.db`.
 
+### Protecting mutating endpoints
+
+Write endpoints (`PUT /api/target/{id}`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`.
+
+```bash
+docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
+```
+
+If `UPTIME_API_TOKEN` is unset the guard **fails closed** — all writes are denied (a warning is logged at startup). You must set the variable for the edit/login flow to work.
+
+The web UI has a **Login** button in the header. Entering a token calls `POST /api/auth/verify` to confirm it's correct; on success the token is stored in the browser's `localStorage` and the button becomes **Logout**. The edit buttons on target cards are only shown while logged in, and the token is cleared automatically if a save is ever rejected with 401.
+
 ---
 
 ## API Documentation
