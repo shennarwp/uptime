@@ -5,7 +5,7 @@
 *.exe
 *.test
 *.out
-uptime
+/uptime
 
 # React/Node
 /node_modules

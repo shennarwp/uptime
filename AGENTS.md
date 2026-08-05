@@ -39,7 +39,6 @@ npm run build        # in web/
 
 ## Gotchas
 
-- `git add` on `cmd/uptime/main.go` reports "path is ignored" because the `.gitignore` pattern `uptime` matches the `cmd/uptime` directory — use `git add -f cmd/uptime/main.go`.
 - The SPA source of truth is `.tsx`; stale `src/**/*.js` tsc-emit artifacts are gitignored but would shadow them in Vite resolution — delete any that appear.
 - Auth: mutating endpoints require `Authorization: Bearer <token>`, token from `UPTIME_API_TOKEN` env (fails closed if unset). DB path is `UPTIME_DB_PATH` (default `./uptime.db`).
 - Always commit regenerated `api/` files together with API changes.
