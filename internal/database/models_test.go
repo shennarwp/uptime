@@ -57,4 +57,22 @@ func TestNow(t *testing.T) {
 	if n.Time.IsZero() {
 		t.Errorf("Now() returned zero time")
 	}
+	if n.Time.Location() != time.UTC {
+		t.Errorf("expected Now() to be UTC, got %s", n.Time.Location())
+	}
+}
+
+func TestTimestamp_ValueUsesUTC(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		t.Fatalf("failed to load location: %v", err)
+	}
+	local := time.Date(2026, 6, 5, 12, 30, 45, 0, loc)
+	val, err := Timestamp{Time: local}.Value()
+	if err != nil {
+		t.Fatalf("unexpected error getting value: %v", err)
+	}
+	if val != "2026-06-05 03:30:45" {
+		t.Errorf("expected UTC-converted '2026-06-05 03:30:45', got %v", val)
+	}
 }
