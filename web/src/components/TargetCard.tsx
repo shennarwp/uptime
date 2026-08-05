@@ -121,6 +121,12 @@ export function TargetCard({
             <h3 className="modal-title">Edit Target</h3>
             <label className="modal-label">
               Name
+              <span className="modal-help" tabIndex={0} aria-label="Name restrictions">
+                ?
+                <span className="modal-tooltip">
+                  Up to 100 characters. Control characters (e.g. newline) are not allowed.
+                </span>
+              </span>
               <input
                 className="modal-input"
                 type="text"
@@ -136,6 +142,13 @@ export function TargetCard({
             </label>
             <label className="modal-label">
               Schedule
+              <span className="modal-help" tabIndex={0} aria-label="Schedule format">
+                ?
+                <span className="modal-tooltip">
+                  6-field cron: second minute hour day-of-month month day-of-week — e.g. 0 0 */3 * *
+                  *. Descriptors are also allowed, e.g. @every 5m or @hourly.
+                </span>
+              </span>
               <input
                 className="modal-input"
                 type="text"

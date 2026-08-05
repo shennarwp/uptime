@@ -44,10 +44,13 @@ describe('TargetCard component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
 
-    const nameInput = screen.getByLabelText('Name');
-    const scheduleInput = screen.getByLabelText('Schedule');
+    const nameInput = screen.getByRole('textbox', { name: /^Name/ });
+    const scheduleInput = screen.getByRole('textbox', { name: /^Schedule/ });
     expect(nameInput).toHaveValue('Example Target');
     expect(scheduleInput).toHaveValue('@every 1m');
+
+    expect(screen.getByLabelText('Name restrictions')).toHaveTextContent(/100 characters/);
+    expect(screen.getByLabelText('Schedule format')).toHaveTextContent(/6-field cron/);
 
     fireEvent.change(nameInput, { target: { value: 'Renamed' } });
     fireEvent.change(scheduleInput, { target: { value: '0 0 */3 * * *' } });
@@ -64,7 +67,7 @@ describe('TargetCard component', () => {
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^Name/ })).not.toBeInTheDocument();
     expect(onUpdate).not.toHaveBeenCalled();
   });
 });
