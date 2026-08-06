@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TruncatedUrl } from './TruncatedUrl';
 import { CheckHistoryBar } from './CheckHistoryBar';
+import { formatDateTime } from '../utils/datetime';
 
 type Check = {
   id: number;
@@ -51,7 +52,7 @@ export function TargetCard({
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
   const isUp = lastCheck ? lastCheck.is_up : false;
   const lastCheckTime = lastCheck
-    ? new Date(lastCheck.checked_at).toLocaleString()
+    ? formatDateTime(new Date(lastCheck.checked_at))
     : 'No checks yet';
 
   const [showEdit, setShowEdit] = useState(false);
