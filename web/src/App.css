@@ -76,6 +76,17 @@ body {
   align-items: center;
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-logo {
+  width: 22px;
+  height: 22px;
+}
+
 .app-title {
   font-size: 22px;
   font-weight: bold;
@@ -201,14 +212,23 @@ body {
 }
 
 .edit-btn {
+  display: flex;
+  align-items: center;
   background: none;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 3px 10px;
+  padding: 5px;
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
   color: var(--text-color);
+  line-height: 0;
+}
+
+.edit-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
 .edit-btn:hover {
