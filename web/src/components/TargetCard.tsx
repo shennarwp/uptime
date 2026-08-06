@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TruncatedUrl } from './TruncatedUrl';
 import { CheckHistoryBar } from './CheckHistoryBar';
 import { formatDateTime } from '../utils/datetime';
+import { formatResponseTime } from '../utils/format';
 
 type Check = {
   id: number;
@@ -127,7 +128,7 @@ export function TargetCard({
         {lastCheck?.response_time_ms !== undefined && lastCheck?.response_time_ms !== null && (
           <div>
             <span className="meta-label">Response Time: </span>
-            <span className="meta-value">{lastCheck.response_time_ms}ms</span>
+            <span className="meta-value">{formatResponseTime(lastCheck.response_time_ms)}</span>
           </div>
         )}
         {certInfo && (
