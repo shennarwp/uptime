@@ -68,11 +68,22 @@ func TestTimestamp_ValueUsesUTC(t *testing.T) {
 		t.Fatalf("failed to load location: %v", err)
 	}
 	local := time.Date(2026, 6, 5, 12, 30, 45, 0, loc)
-	val, err := Timestamp{Time: local}.Value()
+	val, err := (&Timestamp{Time: local}).Value()
 	if err != nil {
 		t.Fatalf("unexpected error getting value: %v", err)
 	}
 	if val != "2026-06-05 03:30:45" {
 		t.Errorf("expected UTC-converted '2026-06-05 03:30:45', got %v", val)
+	}
+}
+
+func TestTimestamp_ValueNil(t *testing.T) {
+	var ts *Timestamp
+	val, err := ts.Value()
+	if err != nil {
+		t.Fatalf("unexpected error for nil Timestamp: %v", err)
+	}
+	if val != nil {
+		t.Errorf("expected nil value for nil Timestamp, got %v", val)
 	}
 }
