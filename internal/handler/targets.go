@@ -33,7 +33,7 @@ func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 // @Success 200 {array} database.TargetWithChecks "List of targets with recent checks"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/targets [get]
-func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
+func (h *TargetHandler) GetTargets(w http.ResponseWriter, _ *http.Request) {
 	targets, err := h.svc.GetTargetsWithRecentChecks(1500)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

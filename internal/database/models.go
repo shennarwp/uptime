@@ -29,7 +29,10 @@ func (t *Timestamp) Scan(src any) error {
 	}
 }
 
-func (t Timestamp) Value() (driver.Value, error) {
+func (t *Timestamp) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
 	return t.Time.UTC().Format("2006-01-02 15:04:05"), nil
 }
 

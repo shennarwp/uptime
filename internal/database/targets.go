@@ -69,7 +69,7 @@ func (r *TargetRepository) UpdateTarget(id int, name string, schedule string) er
 	now := Now()
 	res, err := r.db.Exec(
 		"UPDATE targets SET name = ?, schedule = ?, updated_at = ? WHERE id = ?",
-		name, schedule, now, id,
+		name, schedule, &now, id,
 	)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (r *TargetRepository) CreateTarget(t *Target) error {
 	t.UpdatedAt = now
 	result, err := r.db.Exec(
 		"INSERT INTO targets (name, url, schedule, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		t.Name, t.URL, t.Schedule, t.CreatedAt, t.UpdatedAt,
+		t.Name, t.URL, t.Schedule, &t.CreatedAt, &t.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (r *TargetRepository) CreateCheck(c *Check) error {
 	}
 	_, err := r.db.Exec(
 		"INSERT INTO checks (target_id, status_code, response_time_ms, is_up, error_message, checked_at) VALUES (?, ?, ?, ?, ?, ?)",
-		c.TargetID, c.StatusCode, c.ResponseTimeMS, isUp, c.ErrorMessage, c.CheckedAt,
+		c.TargetID, c.StatusCode, c.ResponseTimeMS, isUp, c.ErrorMessage, &c.CheckedAt,
 	)
 	return err
 }
@@ -129,7 +129,7 @@ func (r *TargetRepository) CreateIncident(inc *Incident) error {
 	}
 	_, err := r.db.Exec(
 		"INSERT INTO incidents (target_id, started_at, ended_at, cause, resolved, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-		inc.TargetID, inc.StartedAt, inc.EndedAt, inc.Cause, resolved, inc.CreatedAt,
+		inc.TargetID, &inc.StartedAt, inc.EndedAt, inc.Cause, resolved, &inc.CreatedAt,
 	)
 	return err
 }
@@ -171,7 +171,12 @@ func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(rows)
 
 	var checks []Check
 	for rows.Next() {
@@ -180,7 +185,7 @@ func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([
 		if err := rows.Scan(&c.ID, &c.TargetID, &c.StatusCode, &c.ResponseTimeMS, &isUpInt, &c.ErrorMessage, &c.CheckedAt); err != nil {
 			return nil, err
 		}
-		c.IsUp = (isUpInt == 1)
+		c.IsUp = isUpInt == 1
 		checks = append(checks, c)
 	}
 	return checks, rows.Err()
