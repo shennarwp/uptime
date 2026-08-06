@@ -32,7 +32,10 @@ export function Header({
 
   return (
     <header className="app-header">
-      <span className="app-title">Uptime</span>
+      <div className="app-brand">
+        <img className="app-logo" src="/logo.svg" alt="" />
+        <span className="app-title">Uptime</span>
+      </div>
       <div className="header-actions">
         {isLoggedIn ? (
           <button className="header-btn" onClick={onLogout}>

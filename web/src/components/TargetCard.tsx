@@ -108,7 +108,7 @@ export function TargetCard({
           <h3 className="target-title">{target.name}</h3>
           {canEdit && (
             <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
-              Edit
+              <img className="edit-icon" src="/edit-icon.svg" alt="" />
             </button>
           )}
         </div>
