@@ -1,0 +1,45 @@
+# Version control
+.git
+.gitattributes
+.gitignore
+
+# CI / docs / tooling
+.github
+README.md
+AGENTS.md
+lefthook.yml
+sonar-project.properties
+
+# Docker build assets (not needed in the image)
+Dockerfile-alpine
+docker-compose.yml
+.dockerignore
+
+# Local Go build artifacts and data
+uptime
+*.test
+*.out
+*.exe
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Node / frontend dependencies and build output
+web/node_modules
+web/dist
+web/.vite
+web/.eslintcache
+web/tsconfig.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+
+# IDE / editor
+.idea
+.vscode
+*.swp
+*.swo
