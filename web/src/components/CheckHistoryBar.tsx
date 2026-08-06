@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { formatDateTime } from '../utils/datetime';
 
 type Check = {
   id: number;
@@ -49,7 +50,7 @@ export function CheckHistoryBar({ checks }: { checks: Check[] }) {
           return (
             <div
               key={c.id}
-              title={`Check at ${new Date(c.checked_at).toLocaleString()} - ${c.is_up ? 'UP' : 'DOWN'}${c.status_code ? ` (Status: ${c.status_code})` : ''}`}
+              title={`Check at ${formatDateTime(new Date(c.checked_at))} - ${c.is_up ? 'UP' : 'DOWN'}${c.status_code ? ` (Status: ${c.status_code})` : ''}`}
               className={`history-box ${c.is_up ? 'up' : 'down'}`}
             />
           );
