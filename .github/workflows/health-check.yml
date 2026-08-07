@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check URLs
         run: |
-          URLS=("https://shennarwp.com/cv-staging/" "https://resume.graysand-8af4e4eb.germanywestcentral.azurecontainerapps.io/" "https://victorious-moss-02a509500.7.azurestaticapps.net/" "https://uptime.rwpiri.com")
+          URLS=("https://uptime.rwpiri.com")
           FAILED_URLS=()
           SUCCESS_URLS=()
           
