@@ -1,0 +1,47 @@
+name: Health Check
+
+permissions: {}
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check URLs
+        run: |
+          URLS=("https://shennarwp.com/cv-staging/" "https://resume.graysand-8af4e4eb.germanywestcentral.azurecontainerapps.io/" "https://victorious-moss-02a509500.7.azurestaticapps.net/" "https://uptime.rwpiri.com")
+          FAILED_URLS=()
+          SUCCESS_URLS=()
+          
+          {
+            echo "### Health Check Results"
+            echo "| URL | Status |"
+            echo "| --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          for url in "${URLS[@]}"; do
+            if ! curl -sf -o /dev/null "$url"; then
+              echo "Failed: $url"
+              FAILED_URLS+=("$url")
+              echo "| $url | ❌ Down |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Success: $url"
+              SUCCESS_URLS+=("$url")
+              echo "| $url | ✅ OK |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          
+          if [ ${#FAILED_URLS[@]} -eq 0 ]; then
+            echo -e "\n**All URLs are OK.**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            SUMMARY=$(printf "%s, " "${FAILED_URLS[@]}")
+            SUMMARY=${SUMMARY%, }
+            echo -e "\n**Following URLs are down:** $SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+            
+            # Send notification
+            curl -d "Following URLs are down: $SUMMARY" ${{ secrets.NTFY_URL_PING }}
+          fi
