@@ -13,16 +13,24 @@ func NewTargetRepository(db *sql.DB) *TargetRepository {
 	return &TargetRepository{db: db}
 }
 
-const targetColumns = "id, name, url, schedule, cert_expires_at, created_at, updated_at"
+const targetColumns = "id, name, url, schedule, cert_expires_at, cert_notified_30d_at, cert_notified_10d_date, created_at, updated_at"
 
 func scanTarget(scanner interface{ Scan(dest ...any) error }) (Target, error) {
 	var t Target
 	var cert sql.NullString
-	if err := scanner.Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &cert, &t.CreatedAt, &t.UpdatedAt); err != nil {
+	var notified30d sql.NullString
+	var notified10d sql.NullString
+	if err := scanner.Scan(&t.ID, &t.Name, &t.URL, &t.Schedule, &cert, &notified30d, &notified10d, &t.CreatedAt, &t.UpdatedAt); err != nil {
 		return t, err
 	}
 	if cert.Valid {
 		t.CertExpiresAt = &cert.String
+	}
+	if notified30d.Valid {
+		t.CertNotified30dAt = &notified30d.String
+	}
+	if notified10d.Valid {
+		t.CertNotified10dDate = &notified10d.String
 	}
 	return t, nil
 }
@@ -61,6 +69,17 @@ func (r *TargetRepository) GetTargetByID(id int) (*Target, error) {
 // UpdateCertExpiresAt stores the TLS certificate expiry observed for a target.
 func (r *TargetRepository) UpdateCertExpiresAt(id int, expiresAt string) error {
 	_, err := r.db.Exec("UPDATE targets SET cert_expires_at = ? WHERE id = ?", expiresAt, id)
+	return err
+}
+
+// UpdateCertState atomically stores the observed TLS certificate expiry together
+// with the notification bookkeeping for it. Passing nil for a notification
+// column clears it.
+func (r *TargetRepository) UpdateCertState(id int, expiresAt string, notified30dAt, notified10dDate *string) error {
+	_, err := r.db.Exec(
+		"UPDATE targets SET cert_expires_at = ?, cert_notified_30d_at = ?, cert_notified_10d_date = ? WHERE id = ?",
+		expiresAt, notified30dAt, notified10dDate, id,
+	)
 	return err
 }
 
@@ -189,4 +208,17 @@ func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([
 		checks = append(checks, c)
 	}
 	return checks, rows.Err()
+}
+
+// GetLastCheckByTargetID returns the most recent check for a target, or nil if
+// the target has not been checked yet.
+func (r *TargetRepository) GetLastCheckByTargetID(targetID int) (*Check, error) {
+	checks, err := r.GetRecentChecksByTargetID(targetID, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(checks) == 0 {
+		return nil, nil
+	}
+	return &checks[0], nil
 }

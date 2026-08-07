@@ -45,7 +45,7 @@ func main() {
 	svc := service.NewTargetService(repo)
 	h := handler.NewTargetHandler(svc)
 
-	pollingSvc := service.NewPollingService(repo)
+	pollingSvc := service.NewPollingService(repo, os.Getenv("UPTIME_NTFY_URL"))
 	go pollingSvc.Start(context.Background())
 
 	mux := http.NewServeMux()

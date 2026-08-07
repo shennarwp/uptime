@@ -54,6 +54,14 @@ type Target struct {
 	// observed for the target, in RFC3339 (UTC). Nil for HTTP targets or before
 	// the first check observes a certificate.
 	CertExpiresAt *string `json:"cert_expires_at,omitempty"`
+	// CertNotified30dAt stores the cert expiry value for which the one-time
+	// "expires within 30 days" notification has been sent. It is internal
+	// bookkeeping and never exposed over the API.
+	CertNotified30dAt *string `json:"-"`
+	// CertNotified10dDate stores the last calendar day on which the daily
+	// "expires within 10 days" reminder was sent, as YYYY-MM-DD. It is internal
+	// bookkeeping and never exposed over the API.
+	CertNotified10dDate *string `json:"-"`
 	// CreatedAt is when the target was created.
 	CreatedAt Timestamp `json:"created_at" swaggertype:"primitive,string"`
 	// UpdatedAt is when the target was last updated.
