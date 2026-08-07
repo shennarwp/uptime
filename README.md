@@ -1,4 +1,4 @@
-# Uptime Monitor
+# <img src="web/public/logo.svg" alt="" width="40" height="40" /> Uptime Monitor
 
 A lightweight, self-hosted uptime monitoring application featuring a Go backend (SQLite) and a modern React frontend (TypeScript & Vite).
 
