@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -174,11 +173,12 @@ func (s *PollingService) verifyCertChain(cs tls.ConnectionState) error {
 	return nil
 }
 
-// checkTargetCert reads the TLS certificate expiry for an HTTPS target by
-// performing a bare handshake. It returns the leaf certificate's NotAfter, or
-// ok=false for non-HTTPS targets and failed connections. The handshake accepts
-// any certificate (real chain verification still happens in the HTTP client);
-// this background task only needs to observe the expiry date.
+// checkTargetCert reads the TLS certificate expiry for an HTTPS target. It
+// reuses the polling HTTP client, whose TLS configuration still performs real
+// chain and hostname verification (see verifyCertChain) — only expiry-related
+// failures are tolerated so they can be observed and reported. It returns the
+// leaf certificate's NotAfter, or ok=false for non-HTTPS targets and failed
+// connections.
 func (s *PollingService) checkTargetCert(t database.Target) (time.Time, bool) {
 	u, err := url.Parse(t.URL)
 	if err != nil {
@@ -188,32 +188,20 @@ func (s *PollingService) checkTargetCert(t database.Target) (time.Time, bool) {
 	if u.Scheme != "https" {
 		return time.Time{}, false
 	}
-	host := u.Hostname()
-	if port := u.Port(); port == "" {
-		host = net.JoinHostPort(host, "443")
-	} else {
-		host = net.JoinHostPort(host, port)
-	}
-	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 10 * time.Second}, "tcp", host, &tls.Config{
-		// Observation only: the expiry is recorded regardless of whether the
-		// certificate is trusted.
-		//nolint:gosec
-		InsecureSkipVerify: true,
-	})
+	resp, err := s.client.Get(t.URL)
 	if err != nil {
 		log.Printf("[Polling] Error connecting for certificate check to target %s (%s): %v", t.Name, t.URL, err)
 		return time.Time{}, false
 	}
 	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Printf("[Polling] Error closing certificate check connection for target %s: %v", t.Name, err)
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("[Polling] Error closing certificate check response for target %s: %v", t.Name, err)
 		}
 	}()
-	state := conn.ConnectionState()
-	if len(state.PeerCertificates) == 0 {
+	if resp.TLS == nil || len(resp.TLS.PeerCertificates) == 0 {
 		return time.Time{}, false
 	}
-	return state.PeerCertificates[0].NotAfter.UTC(), true
+	return resp.TLS.PeerCertificates[0].NotAfter.UTC(), true
 }
 
 // checkCertificates is the daily certificate expiry sweep. It runs on a fixed
