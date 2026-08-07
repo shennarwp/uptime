@@ -106,6 +106,24 @@ The web UI has a **Login** button in the header. Entering a token calls `POST /a
 
 ---
 
+## ntfy notifications (optional)
+
+When `UPTIME_NTFY_URL` is set, the poller sends [ntfy](https://ntfy.sh) notifications about health status and certificate expiry.
+
+**Status changes.** After each health check a notification is sent whenever a target transitions `UP -> DOWN`, remains `DOWN`, or recovers (`DOWN -> UP`). While a target stays `UP`, no notification is sent. Each message includes the target name, its URL, the new status (`🟢 UP` / `🔴 DOWN`), and — when down — the HTTP status code and/or the error message.
+
+**Certificate expiry.** A dedicated daily job (independent of each target's poll interval) checks the TLS certificate of every HTTPS target once a day. A reminder is sent once when the certificate has 30 days or fewer remaining, and then once per calendar day once it has 10 days or fewer. Renewing the certificate resets the reminder cycle. Messages include the target name, URL, days remaining, and the expiry date.
+
+The variable is a plain HTTP(S) URL to an ntfy topic, e.g. `https://ntfy.sh/mytopic`. If it is unset or empty, notifications are disabled.
+
+```bash
+docker run ... -e UPTIME_NTFY_URL=https://ntfy.sh/mytopic ...
+```
+
+In the deployment workflow the URL is provided via the `UPTIME_NTFY_URL` repository secret; see `.github/workflows/deploy.yml` and `docker-compose.yml`.
+
+---
+
 ## API Documentation
 
 The backend exposes an OpenAPI (Swagger) specification generated from Go annotations using [swaggo/swag](https://github.com/swaggo/swag).
