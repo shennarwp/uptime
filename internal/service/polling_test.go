@@ -228,7 +228,7 @@ func removeSeededTargets(t *testing.T, repo *database.TargetRepository, keep ...
 }
 
 func TestPollingService_CheckCertificates_PersistsExpiry(t *testing.T) {
-	ts, _, expected := newTLSTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts, pool, expected := newTLSTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
@@ -257,6 +257,7 @@ func TestPollingService_CheckCertificates_PersistsExpiry(t *testing.T) {
 	removeSeededTargets(t, repo, ts.URL)
 
 	svc := NewPollingService(repo, "")
+	svc.rootPool = pool
 	svc.checkCertificates()
 
 	targets, err := repo.GetTargets()
@@ -841,7 +842,7 @@ func TestPollingService_CheckCertificates_NotifiesOnExpiry(t *testing.T) {
 	}))
 	defer ntfy.Close()
 
-	ts, _, _ := newTLSTestServerWithExpiry(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts, pool, _ := newTLSTestServerWithExpiry(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}), time.Now().Add(5*24*time.Hour+2*time.Hour))
 	defer ts.Close()
@@ -870,6 +871,7 @@ func TestPollingService_CheckCertificates_NotifiesOnExpiry(t *testing.T) {
 	removeSeededTargets(t, repo, ts.URL)
 
 	svc := NewPollingService(repo, ntfy.URL)
+	svc.rootPool = pool
 
 	count := func() int {
 		mu.Lock()
