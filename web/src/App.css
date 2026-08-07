@@ -198,6 +198,31 @@ body {
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
 }
 
+.add-target-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 64px;
+  margin-bottom: 20px;
+  background-color: var(--card-bg);
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--subtext-color);
+  font-family: inherit;
+  font-size: 48px;
+  line-height: 0;
+  padding: 0;
+  cursor: pointer;
+  padding-bottom: 6px;
+}
+
+.add-target-card:hover {
+  background-color: var(--active-bg);
+  border-color: var(--text-color);
+  color: var(--text-color);
+}
+
 .target-header {
   display: flex;
   justify-content: space-between;

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -39,6 +40,23 @@ func validateSchedule(schedule string) error {
 	}
 	if _, err := scheduleParser.Parse(schedule); err != nil {
 		return fmt.Errorf("invalid schedule format: %v", err)
+	}
+	return nil
+}
+
+func validateURL(rawURL string) error {
+	if strings.TrimSpace(rawURL) == "" {
+		return fmt.Errorf("url is required")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid url: %v", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("url must use the http or https scheme")
+	}
+	if u.Host == "" {
+		return fmt.Errorf("url must include a host")
 	}
 	return nil
 }

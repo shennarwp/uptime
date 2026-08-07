@@ -3,6 +3,7 @@ import './App.css';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { TargetCard } from './components/TargetCard';
+import { TargetFormModal, type TargetFormValues } from './components/TargetFormModal';
 
 type Check = {
   id: number;
@@ -28,6 +29,7 @@ function App() {
   const [targets, setTargets] = useState<TargetWithChecks[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
     () => localStorage.getItem('uptimeApiToken') !== null,
   );
@@ -95,6 +97,28 @@ function App() {
     setTargets(data);
   };
 
+  const handleCreateTarget = async (values: TargetFormValues) => {
+    const token = localStorage.getItem('uptimeApiToken') ?? '';
+    const res = await fetch('/api/targets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: values.name, url: values.url, schedule: values.schedule }),
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem('uptimeApiToken');
+        setIsLoggedIn(false);
+      }
+      const body = await res.text();
+      throw new Error(body || `Failed to add target (${res.status})`);
+    }
+    const data = await fetch('/api/targets').then((r) => r.json());
+    setTargets(data);
+  };
+
   return (
     <div className="app-container">
       <Header isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} />
@@ -114,8 +138,26 @@ function App() {
               />
             ))
           )}
+          {isLoggedIn && (
+            <button
+              className="add-target-card"
+              onClick={() => setShowAdd(true)}
+              aria-label="Add new target"
+            >
+              +
+            </button>
+          )}
         </main>
       </div>
+      {showAdd && (
+        <TargetFormModal
+          title="Add Target"
+          includeUrl
+          initial={{ name: '', url: '', schedule: '' }}
+          onCancel={() => setShowAdd(false)}
+          onSubmit={handleCreateTarget}
+        />
+      )}
     </div>
   );
 }

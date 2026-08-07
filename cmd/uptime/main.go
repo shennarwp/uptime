@@ -50,6 +50,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/targets", h.GetTargets)
+	mux.HandleFunc("POST /api/targets", handler.RequireAPIToken(h.CreateTarget))
 	mux.HandleFunc("POST /api/auth/verify", h.VerifyToken)
 	mux.HandleFunc("PUT /api/target/{id}", handler.RequireAPIToken(h.UpdateTarget))
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)

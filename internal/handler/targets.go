@@ -21,6 +21,13 @@ type UpdateTargetRequest struct {
 	Schedule string `json:"schedule"`
 }
 
+// CreateTargetRequest is the JSON body for creating a target.
+type CreateTargetRequest struct {
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Schedule string `json:"schedule"`
+}
+
 func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 	return &TargetHandler{svc: svc}
 }
@@ -42,6 +49,54 @@ func (h *TargetHandler) GetTargets(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(targets)
 	if err != nil {
+		return
+	}
+}
+
+// CreateTarget creates a new target.
+// @Summary Create a target
+// @Description Creates a new target and schedules it for polling on the given schedule.
+// @Tags targets
+// @Accept json
+// @Produce json
+// @Param target body CreateTargetRequest true "New target fields (name, url and schedule)"
+// @Success 201 {object} database.Target "Created target"
+// @Failure 400 {string} string "Invalid request"
+// @Failure 500 {string} string "Internal server error"
+// @Security BearerAuth
+// @Router /api/targets [post]
+func (h *TargetHandler) CreateTarget(w http.ResponseWriter, r *http.Request) {
+	var req CreateTargetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := validateName(req.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateURL(req.URL); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateSchedule(req.Schedule); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	target, err := h.svc.CreateTarget(
+		strings.TrimSpace(req.Name),
+		strings.TrimSpace(req.URL),
+		strings.TrimSpace(req.Schedule),
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(target); err != nil {
 		return
 	}
 }

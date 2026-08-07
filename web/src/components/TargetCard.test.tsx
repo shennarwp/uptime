@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TargetCard } from './TargetCard';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -53,7 +53,8 @@ describe('TargetCard component', () => {
     fireEvent.change(scheduleInput, { target: { value: '0 0 */3 * * *' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(onUpdate).toHaveBeenCalledWith(1, 'Renamed', '0 0 */3 * * *');
+    await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(1, 'Renamed', '0 0 */3 * * *'));
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
   it('closes the edit popup when cancel is clicked', () => {

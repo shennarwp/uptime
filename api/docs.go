@@ -128,6 +128,55 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new target and schedules it for polling on the given schedule.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "targets"
+                ],
+                "summary": "Create a target",
+                "parameters": [
+                    {
+                        "description": "New target fields (name, url and schedule)",
+                        "name": "target",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CreateTargetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created target",
+                        "schema": {
+                            "$ref": "#/definitions/database.Target"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         }
     },
@@ -234,6 +283,20 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL is the endpoint that is being monitored.",
+                    "type": "string"
+                }
+            }
+        },
+        "handler.CreateTargetRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

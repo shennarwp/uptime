@@ -18,6 +18,15 @@ func (s *TargetService) GetTargetsWithRecentChecks(limit int) ([]database.Target
 	return s.repo.GetTargetsWithRecentChecks(limit)
 }
 
+// CreateTarget creates a new target and returns it.
+func (s *TargetService) CreateTarget(name string, url string, schedule string) (*database.Target, error) {
+	t := &database.Target{Name: name, URL: url, Schedule: schedule}
+	if err := s.repo.CreateTarget(t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 // UpdateTarget updates the name and schedule of an existing target and returns
 // the updated target.
 func (s *TargetService) UpdateTarget(id int, name string, schedule string) (*database.Target, error) {
