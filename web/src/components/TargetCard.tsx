@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TruncatedUrl } from './TruncatedUrl';
 import { CheckHistoryBar } from './CheckHistoryBar';
+import { TargetFormModal } from './TargetFormModal';
 import { formatDateTime } from '../utils/datetime';
 import { formatResponseTime } from '../utils/format';
 
@@ -57,10 +58,6 @@ export function TargetCard({
     : 'No checks yet';
 
   const [showEdit, setShowEdit] = useState(false);
-  const [name, setName] = useState(target.name);
-  const [schedule, setSchedule] = useState(target.schedule);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const certExpiry = target.cert_expires_at ? new Date(target.cert_expires_at) : null;
   const certInfo = certExpiry ? certExpiryInfo(certExpiry) : null;
@@ -83,23 +80,11 @@ export function TargetCard({
   }
 
   const openEdit = () => {
-    setName(target.name);
-    setSchedule(target.schedule);
-    setError(null);
     setShowEdit(true);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await onUpdate(target.id, name, schedule);
-      setShowEdit(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update target');
-    } finally {
-      setSaving(false);
-    }
+  const handleUpdate = async (values: { name: string; url: string; schedule: string }) => {
+    await onUpdate(target.id, values.name, values.schedule);
   };
 
   return (
@@ -146,71 +131,12 @@ export function TargetCard({
       <CheckHistoryBar checks={target.checks} />
 
       {showEdit && (
-        <div className="modal-overlay" onClick={() => !saving && setShowEdit(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Edit Target</h3>
-            <label className="modal-label">
-              Name
-              <span className="modal-help" tabIndex={0} aria-label="Name restrictions">
-                ?
-                <span className="modal-tooltip">
-                  Up to 100 characters. Control characters (e.g. newline) are not allowed.
-                </span>
-              </span>
-              <input
-                className="modal-input"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={100}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !saving && name.trim() && schedule.trim()) {
-                    handleSave();
-                  }
-                }}
-              />
-            </label>
-            <label className="modal-label">
-              Schedule
-              <span className="modal-help" tabIndex={0} aria-label="Schedule format">
-                ?
-                <span className="modal-tooltip">
-                  6-field cron: second minute hour day-of-month month day-of-week — e.g. 0 0 */3 * *
-                  *. Descriptors are also allowed, e.g. @every 5m or @hourly.
-                </span>
-              </span>
-              <input
-                className="modal-input"
-                type="text"
-                value={schedule}
-                onChange={(e) => setSchedule(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !saving && name.trim() && schedule.trim()) {
-                    handleSave();
-                  }
-                }}
-                placeholder="e.g. 0 0 */3 * * *"
-              />
-            </label>
-            <div className="modal-actions">
-              {error && <span className="modal-error">{error}</span>}
-              <button
-                className="modal-btn cancel"
-                onClick={() => setShowEdit(false)}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button
-                className="modal-btn save"
-                onClick={handleSave}
-                disabled={saving || !name.trim() || !schedule.trim()}
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <TargetFormModal
+          title="Edit Target"
+          initial={{ name: target.name, url: target.url, schedule: target.schedule }}
+          onCancel={() => setShowEdit(false)}
+          onSubmit={handleUpdate}
+        />
       )}
     </div>
   );

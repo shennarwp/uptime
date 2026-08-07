@@ -85,6 +85,15 @@ definitions:
         description: URL is the endpoint that is being monitored.
         type: string
     type: object
+  handler.CreateTargetRequest:
+    properties:
+      name:
+        type: string
+      schedule:
+        type: string
+      url:
+        type: string
+    type: object
   handler.UpdateTargetRequest:
     properties:
       name:
@@ -172,6 +181,38 @@ paths:
           schema:
             type: string
       summary: List targets with recent checks
+      tags:
+      - targets
+    post:
+      consumes:
+      - application/json
+      description: Creates a new target and schedules it for polling on the given
+        schedule.
+      parameters:
+      - description: New target fields (name, url and schedule)
+        in: body
+        name: target
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateTargetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created target
+          schema:
+            $ref: '#/definitions/database.Target'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create a target
       tags:
       - targets
 securityDefinitions:
