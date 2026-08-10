@@ -37,6 +37,7 @@ body {
   --status-badge-down: #991b1b;
   --status-badge-down-bg: #fee2e2;
   --cert-warn-color: #b45309;
+  --cert-critical-color: #e44646;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,6 +58,7 @@ body {
     --status-badge-down: #fee2e2;
     --status-badge-down-bg: #991b1b;
     --cert-warn-color: #fbbf24;
+    --cert-critical-color: #e44646;
   }
 }
 
@@ -434,7 +436,7 @@ body {
 }
 
 .meta-value.cert-critical {
-  color: var(--status-badge-down);
+  color: var(--cert-critical-color);
   font-weight: bold;
 }
 
