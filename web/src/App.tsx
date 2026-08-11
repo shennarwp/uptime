@@ -35,14 +35,18 @@ function App() {
   );
 
   useEffect(() => {
-    fetch('/api/targets')
-      .then((res) => res.json())
-      .then((data) => {
-        setTargets(data);
-        if (data.length > 0 && selectedId === null) {
-          setSelectedId(data[0].id);
-        }
-      });
+    const loadTargets = () => {
+      fetch('/api/targets')
+        .then((res) => res.json())
+        .then((data) => {
+          setTargets(data);
+          setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
+        });
+    };
+
+    loadTargets();
+    const interval = setInterval(loadTargets, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSelect = (id: number) => {
