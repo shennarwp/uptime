@@ -1,6 +1,6 @@
 module uptime
 
-go 1.26.6
+go 1.27.0
 
 tool github.com/evilmartians/lefthook/v2
 
@@ -10,7 +10,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.6
-	modernc.org/sqlite v1.56.0
+	modernc.org/sqlite v1.57.0
 )
 
 require (
