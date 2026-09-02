@@ -1,6 +1,6 @@
 module uptime
 
-go 1.27.0
+go 1.27.1
 
 tool github.com/evilmartians/lefthook/v2
 
