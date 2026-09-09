@@ -26,7 +26,8 @@ LABEL org.opencontainers.image.title="uptime" \
       org.opencontainers.image.authors="Shenna Risqianto Wilfred Piri <shenna@rwpiri.com>" \
       org.opencontainers.image.vendor="shennarwp"
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates && \
+    apk --no-cache upgrade
 
 # Copy custom Nginx configuration
 COPY configs/nginx.conf /etc/nginx/conf.d/default.conf
