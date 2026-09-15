@@ -28,7 +28,10 @@
   // Nothing is copied: same files, container-local reads. Requires the host
   // uid to match the container user (both 1000 on a default Debian install).
   "mounts": [
-    "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,readonly"
+    "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,readonly",
+    // Same idea for GitHub CLI: host ~/.config/gh (hosts.yml token) is
+    // visible read-only so `gh` works without a second login.
+    "type=bind,source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,readonly"
   ],
   "postCreateCommand": "go mod download && cd web && npm ci",
   "customizations": {
