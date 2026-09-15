@@ -1,0 +1,45 @@
+{
+  "name": "uptime",
+  // Go comes from the base image (go.mod pins go 1.27.1; GOTOOLCHAIN
+  // resolves the exact toolchain automatically). Node, Docker (host socket)
+  // and GitHub CLI are added as features so the Debian host itself stays
+  // clean (no global Go/Node/npm packages).
+  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [8080, 5173],
+  "portsAttributes": {
+    "8080": {
+      "label": "Go API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Vite dev server (web/)",
+      "onAutoForward": "openPreview"
+    }
+  },
+  // Host ~/.ssh (keys, config, known_hosts) is visible inside the container
+  // read-only so git-over-SSH and the IDE's git integration work there.
+  // Nothing is copied: same files, container-local reads. Requires the host
+  // uid to match the container user (both 1000 on a default Debian install).
+  "mounts": [
+    "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,readonly"
+  ],
+  "postCreateCommand": "go mod download && cd web && npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer"
+      ]
+    }
+  },
+  "shutdownAction": "none"
+}
