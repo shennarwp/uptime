@@ -4,7 +4,9 @@
   // resolves the exact toolchain automatically). Node, Docker (host socket)
   // and GitHub CLI are added as features so the Debian host itself stays
   // clean (no global Go/Node/npm packages).
-  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "24.0.2"
@@ -31,7 +33,11 @@
     "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,readonly",
     // Same idea for GitHub CLI: host ~/.config/gh (hosts.yml token) is
     // visible read-only so `gh` works without a second login.
-    "type=bind,source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,readonly"
+    "type=bind,source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,readonly",
+    // OpenCode auth only (tokens stay on the host; sessions stay per-side).
+    // Requires ~/.local/share/opencode/auth.json to exist on the host
+    // (it does after `opencode auth login`), otherwise creation fails.
+    "type=bind,source=${localEnv:HOME}/.local/share/opencode/auth.json,target=/home/vscode/.local/share/opencode/auth.json,readonly"
   ],
   "postCreateCommand": "go mod download && cd web && npm ci",
   "customizations": {
