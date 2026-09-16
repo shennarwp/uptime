@@ -7,7 +7,7 @@
   "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "24"
+      "version": "24.0.2"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
