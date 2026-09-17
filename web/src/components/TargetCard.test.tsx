@@ -23,7 +23,15 @@ describe('TargetCard component', () => {
   };
 
   it('renders target name, url, status, and response time', () => {
-    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={vi.fn()} />);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={true}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('Example Target')).toBeInTheDocument();
     expect(screen.getByText('UP')).toBeInTheDocument();
@@ -31,13 +39,29 @@ describe('TargetCard component', () => {
   });
 
   it('hides the edit button when not logged in', () => {
-    render(<TargetCard target={target} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
   });
 
   it('opens the edit popup and calls onUpdate on save', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
-    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={true}
+        onUpdate={onUpdate}
+        onDelete={vi.fn()}
+      />,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
 
@@ -59,7 +83,15 @@ describe('TargetCard component', () => {
 
   it('closes the edit popup when cancel is clicked', () => {
     const onUpdate = vi.fn();
-    render(<TargetCard target={target} isHighlighted={false} canEdit={true} onUpdate={onUpdate} />);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={true}
+        onUpdate={onUpdate}
+        onDelete={vi.fn()}
+      />,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -71,7 +103,13 @@ describe('TargetCard component', () => {
   it('shows the certificate expiry when present', () => {
     const certTarget = { ...target, cert_expires_at: '2999-01-01T00:00:00Z' };
     render(
-      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+      <TargetCard
+        target={certTarget}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
 
     expect(screen.getByText(/Cert Expires/)).toBeInTheDocument();
@@ -82,7 +120,15 @@ describe('TargetCard component', () => {
   });
 
   it('does not show certificate expiry when absent', () => {
-    render(<TargetCard target={target} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
 
     expect(screen.queryByText(/Cert Expires/)).not.toBeInTheDocument();
   });
@@ -90,7 +136,13 @@ describe('TargetCard component', () => {
   it('is critical when the certificate is expired', () => {
     const certTarget = { ...target, cert_expires_at: '2020-01-01T00:00:00Z' };
     render(
-      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+      <TargetCard
+        target={certTarget}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
 
     expect(screen.getByText(/expired \d+d ago/)).toHaveClass('cert-critical');
@@ -100,7 +152,13 @@ describe('TargetCard component', () => {
     const soon = new Date(Date.now() + 5 * 86400000).toISOString();
     const certTarget = { ...target, cert_expires_at: soon };
     render(
-      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+      <TargetCard
+        target={certTarget}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
 
     expect(screen.getByText(/\d+d left/)).toHaveClass('cert-critical');
@@ -110,10 +168,69 @@ describe('TargetCard component', () => {
     const soon = new Date(Date.now() + 20 * 86400000).toISOString();
     const certTarget = { ...target, cert_expires_at: soon };
     render(
-      <TargetCard target={certTarget} isHighlighted={false} canEdit={false} onUpdate={vi.fn()} />,
+      <TargetCard
+        target={certTarget}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
 
     expect(screen.getByText(/\d+d left/)).toHaveClass('cert-warn');
     expect(screen.getByText(/\d+d left/)).not.toHaveClass('cert-critical');
+  });
+
+  it('hides the delete button when not logged in', () => {
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={false}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it('calls onDelete after confirming the delete dialog', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={true}
+        onUpdate={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /delete example target/i }));
+    expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(onDelete).toHaveBeenCalledWith(1));
+    expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument();
+  });
+
+  it('closes the delete dialog without deleting when cancel is clicked', () => {
+    const onDelete = vi.fn();
+    render(
+      <TargetCard
+        target={target}
+        isHighlighted={false}
+        canEdit={true}
+        onUpdate={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /delete example target/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
   });
 });

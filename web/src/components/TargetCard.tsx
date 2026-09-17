@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TruncatedUrl } from './TruncatedUrl';
 import { CheckHistoryBar } from './CheckHistoryBar';
 import { TargetFormModal } from './TargetFormModal';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { formatDateTime } from '../utils/datetime';
 import { formatResponseTime } from '../utils/format';
 
@@ -45,11 +46,13 @@ export function TargetCard({
   isHighlighted,
   canEdit,
   onUpdate,
+  onDelete,
 }: {
   target: TargetWithChecks;
   isHighlighted: boolean;
   canEdit: boolean;
   onUpdate: (id: number, name: string, schedule: string) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
 }) {
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
   const isUp = lastCheck ? lastCheck.is_up : false;
@@ -58,6 +61,7 @@ export function TargetCard({
     : 'No checks yet';
 
   const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   const certExpiry = target.cert_expires_at ? new Date(target.cert_expires_at) : null;
   const certInfo = certExpiry ? certExpiryInfo(certExpiry) : null;
@@ -93,9 +97,18 @@ export function TargetCard({
         <div className="target-title-row">
           <h3 className="target-title">{target.name}</h3>
           {canEdit && (
-            <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
-              <img className="edit-icon" src="/edit-icon.svg" alt="" />
-            </button>
+            <>
+              <button className="edit-btn" onClick={openEdit} aria-label={`Edit ${target.name}`}>
+                <img className="edit-icon" src="/edit-icon.svg" alt="" />
+              </button>
+              <button
+                className="delete-btn"
+                onClick={() => setShowDelete(true)}
+                aria-label={`Delete ${target.name}`}
+              >
+                <img className="delete-icon" src="/delete-icon.svg" alt="" />
+              </button>
+            </>
           )}
         </div>
         <TruncatedUrl url={target.url} />
@@ -136,6 +149,14 @@ export function TargetCard({
           initial={{ name: target.name, url: target.url, schedule: target.schedule }}
           onCancel={() => setShowEdit(false)}
           onSubmit={handleUpdate}
+        />
+      )}
+      {showDelete && (
+        <DeleteConfirmModal
+          title="Delete Target"
+          message={`Are you sure you want to delete "${target.name}"? This cannot be undone.`}
+          onCancel={() => setShowDelete(false)}
+          onConfirm={() => onDelete(target.id)}
         />
       )}
     </div>

@@ -123,6 +123,28 @@ function App() {
     setTargets(data);
   };
 
+  const handleDeleteTarget = async (id: number) => {
+    const token = localStorage.getItem('uptimeApiToken') ?? '';
+    const res = await fetch(`/api/target/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem('uptimeApiToken');
+        setIsLoggedIn(false);
+      }
+      const body = await res.text();
+      throw new Error(body || `Failed to delete target (${res.status})`);
+    }
+    setSelectedId((current) => (current === id ? null : current));
+    const data = await fetch('/api/targets').then((r) => r.json());
+    setTargets(data);
+    if (data.length > 0) {
+      setSelectedId((current) => current ?? data[0].id);
+    }
+  };
+
   return (
     <div className="app-container">
       <Header isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} />
@@ -139,6 +161,7 @@ function App() {
                 isHighlighted={highlightedId === t.id}
                 canEdit={isLoggedIn}
                 onUpdate={handleUpdateTarget}
+                onDelete={handleDeleteTarget}
               />
             ))
           )}
