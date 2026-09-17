@@ -151,3 +151,35 @@ func (h *TargetHandler) UpdateTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// DeleteTarget deletes a target by ID.
+// @Summary Delete a target
+// @Description Deletes a target and all its associated checks and incidents.
+// @Tags targets
+// @Produce json
+// @Param id path int true "Target ID"
+// @Success 204 "Target deleted"
+// @Failure 400 {string} string "Invalid target ID"
+// @Failure 404 {string} string "Target not found"
+// @Failure 500 {string} string "Internal server error"
+// @Security BearerAuth
+// @Router /api/target/{id} [delete]
+func (h *TargetHandler) DeleteTarget(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid target id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.svc.DeleteTarget(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "target not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
