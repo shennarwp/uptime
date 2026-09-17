@@ -35,3 +35,8 @@ func (s *TargetService) UpdateTarget(id int, name string, schedule string) (*dat
 	}
 	return s.repo.GetTargetByID(id)
 }
+
+// DeleteTarget deletes a target by ID.
+func (s *TargetService) DeleteTarget(id int) error {
+	return s.repo.DeleteTarget(id)
+}
