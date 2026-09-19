@@ -75,16 +75,20 @@ func main() {
 	<-stop
 
 	log.Println("shutting down...")
+	if err := shutdown(context.Background(), cancel, pollingSvc, server); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("server stopped")
+}
+
+func shutdown(parent context.Context, cancel context.CancelFunc, pollingSvc *service.PollingService, server *http.Server) error {
 	cancel()
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(parent, 10*time.Second)
 	defer shutdownCancel()
 	if err := pollingSvc.Wait(shutdownCtx); err != nil {
 		log.Printf("polling service did not stop cleanly: %v", err)
 	}
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Fatal(err)
-	}
-	log.Println("server stopped")
+	return server.Shutdown(shutdownCtx)
 }
 
 func healthCheck(db *sql.DB) http.HandlerFunc {
