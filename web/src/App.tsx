@@ -36,7 +36,7 @@ function App() {
 
   useEffect(() => {
     const loadTargets = () => {
-      fetch('/api/targets')
+      fetch('/api/v1/targets')
         .then((res) => res.json())
         .then((data) => {
           setTargets(data);
@@ -45,8 +45,15 @@ function App() {
     };
 
     loadTargets();
+    const events = 'EventSource' in window ? new EventSource('/api/v1/events') : null;
+    if (events) {
+      events.onmessage = loadTargets;
+    }
     const interval = setInterval(loadTargets, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      events?.close();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleSelect = (id: number) => {
@@ -62,7 +69,7 @@ function App() {
   };
 
   const handleLogin = async (token: string): Promise<boolean> => {
-    const res = await fetch('/api/auth/verify', {
+    const res = await fetch('/api/v1/auth/verify', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -81,7 +88,7 @@ function App() {
 
   const handleUpdateTarget = async (id: number, name: string, schedule: string) => {
     const token = localStorage.getItem('uptimeApiToken') ?? '';
-    const res = await fetch(`/api/target/${id}`, {
+    const res = await fetch(`/api/v1/target/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -97,13 +104,13 @@ function App() {
       const body = await res.text();
       throw new Error(body || `Failed to update target (${res.status})`);
     }
-    const data = await fetch('/api/targets').then((r) => r.json());
+    const data = await fetch('/api/v1/targets').then((r) => r.json());
     setTargets(data);
   };
 
   const handleCreateTarget = async (values: TargetFormValues) => {
     const token = localStorage.getItem('uptimeApiToken') ?? '';
-    const res = await fetch('/api/targets', {
+    const res = await fetch('/api/v1/targets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,13 +126,13 @@ function App() {
       const body = await res.text();
       throw new Error(body || `Failed to add target (${res.status})`);
     }
-    const data = await fetch('/api/targets').then((r) => r.json());
+    const data = await fetch('/api/v1/targets').then((r) => r.json());
     setTargets(data);
   };
 
   const handleDeleteTarget = async (id: number) => {
     const token = localStorage.getItem('uptimeApiToken') ?? '';
-    const res = await fetch(`/api/target/${id}`, {
+    const res = await fetch(`/api/v1/target/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -138,7 +145,7 @@ function App() {
       throw new Error(body || `Failed to delete target (${res.status})`);
     }
     setSelectedId((current) => (current === id ? null : current));
-    const data = await fetch('/api/targets').then((r) => r.json());
+    const data = await fetch('/api/v1/targets').then((r) => r.json());
     setTargets(data);
     if (data.length > 0) {
       setSelectedId((current) => current ?? data[0].id);

@@ -10,7 +10,7 @@ import "net/http"
 // @Security BearerAuth
 // @Success 200 "Token is valid"
 // @Failure 401 "Token is invalid"
-// @Router /api/auth/verify [post]
+// @Router /api/v1/auth/verify [post]
 func (h *TargetHandler) VerifyToken(w http.ResponseWriter, r *http.Request) {
 	if !tokenMatches(r) {
 		rejectUnauthorized(w)

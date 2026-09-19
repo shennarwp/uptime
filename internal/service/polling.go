@@ -68,12 +68,18 @@ type PollingService struct {
 	entries        map[int]*cronEntry
 	resyncInterval time.Duration
 	rootPool       *x509.CertPool
+	broker         *EventBroker
+	done           chan struct{}
 	// now returns the current time; overridden in tests to control the
 	// calendar day used for daily certificate reminders.
 	now func() time.Time
 }
 
-func NewPollingService(repo *database.TargetRepository, ntfyURL string) *PollingService {
+func NewPollingService(repo *database.TargetRepository, ntfyURL string, brokers ...*EventBroker) *PollingService {
+	var broker *EventBroker
+	if len(brokers) > 0 {
+		broker = brokers[0]
+	}
 	s := &PollingService{
 		repo:           repo,
 		ntfyURL:        strings.TrimSpace(ntfyURL),
@@ -82,6 +88,8 @@ func NewPollingService(repo *database.TargetRepository, ntfyURL string) *Polling
 		resyncInterval: 30 * time.Second,
 		notifyClient:   &http.Client{Timeout: 10 * time.Second},
 		now:            time.Now,
+		broker:         broker,
+		done:           make(chan struct{}),
 	}
 	if roots, err := x509.SystemCertPool(); err == nil {
 		s.rootPool = roots
@@ -299,6 +307,11 @@ func (s *PollingService) sendCertNotification(t database.Target, daysLeft int, e
 }
 
 func (s *PollingService) Start(ctx context.Context) {
+	defer func() {
+		if s.done != nil {
+			close(s.done)
+		}
+	}()
 	if err := s.sync(); err != nil {
 		log.Printf("[Polling] Error resyncing targets: %v", err)
 		return
@@ -318,13 +331,29 @@ func (s *PollingService) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.cron.Stop()
+			// cron.Stop waits for jobs already running before it returns. This
+			// prevents an in-flight health check from being abandoned on SIGTERM.
+			<-s.cron.Stop().Done()
 			return
 		case <-ticker.C:
 			if err := s.sync(); err != nil {
 				log.Printf("[Polling] Error resyncing targets: %v", err)
 			}
 		}
+	}
+}
+
+// Wait blocks until the polling scheduler has stopped. A context lets the
+// caller bound shutdown if a remote check does not finish in time.
+func (s *PollingService) Wait(ctx context.Context) error {
+	if s.done == nil {
+		return nil
+	}
+	select {
+	case <-s.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
@@ -460,6 +489,9 @@ func (s *PollingService) pingTarget(t database.Target) {
 			ErrorMessage:   &errMsg,
 		}
 		_ = s.repo.CreateCheck(check)
+		if s.broker != nil {
+			s.broker.Publish(UpdateEvent{TargetID: t.ID})
+		}
 		s.notifyTarget(t, prev, check)
 		return
 	}
@@ -486,6 +518,9 @@ func (s *PollingService) pingTarget(t database.Target) {
 		IsUp:           isUp,
 	}
 	_ = s.repo.CreateCheck(check)
+	if s.broker != nil {
+		s.broker.Publish(UpdateEvent{TargetID: t.ID})
+	}
 	s.notifyTarget(t, prev, check)
 }
 

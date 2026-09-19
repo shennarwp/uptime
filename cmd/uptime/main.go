@@ -47,18 +47,14 @@ func main() {
 	repo := database.NewTargetRepository(db)
 	svc := service.NewTargetService(repo)
 	h := handler.NewTargetHandler(svc)
+	events := service.NewEventBroker()
 
-	pollingSvc := service.NewPollingService(repo, os.Getenv("UPTIME_NTFY_URL"))
+	pollingSvc := service.NewPollingService(repo, os.Getenv("UPTIME_NTFY_URL"), events)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go pollingSvc.Start(ctx)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/targets", h.GetTargets)
-	mux.HandleFunc("POST /api/targets", handler.RequireAPIToken(h.CreateTarget))
-	mux.HandleFunc("POST /api/auth/verify", h.VerifyToken)
-	mux.HandleFunc("PUT /api/target/{id}", handler.RequireAPIToken(h.UpdateTarget))
-	mux.HandleFunc("DELETE /api/target/{id}", handler.RequireAPIToken(h.DeleteTarget))
+	mux := handler.NewRouter(h, events)
 	mux.HandleFunc("GET /healthz", healthCheck(db))
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
@@ -82,6 +78,9 @@ func main() {
 	cancel()
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
+	if err := pollingSvc.Wait(shutdownCtx); err != nil {
+		log.Printf("polling service did not stop cleanly: %v", err)
+	}
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatal(err)
 	}
