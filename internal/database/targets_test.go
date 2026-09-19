@@ -1,10 +1,35 @@
 package database
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
+
+func TestTargetRepositoryContextQueries(t *testing.T) {
+	repo, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	targets, err := repo.GetTargetsContext(ctx)
+	if err != nil || len(targets) == 0 {
+		t.Fatalf("GetTargetsContext failed: %v", err)
+	}
+	if _, err := repo.GetTargetByIDContext(ctx, targets[0].ID); err != nil {
+		t.Fatalf("GetTargetByIDContext failed: %v", err)
+	}
+	if _, err := repo.GetRecentChecksByTargetIDContext(ctx, targets[0].ID, 5); err != nil {
+		t.Fatalf("GetRecentChecksByTargetIDContext failed: %v", err)
+	}
+	if _, err := repo.GetLastCheckByTargetIDContext(ctx, targets[0].ID); err != nil {
+		t.Fatalf("GetLastCheckByTargetIDContext failed: %v", err)
+	}
+	if _, err := repo.GetTargetsWithRecentChecksContext(ctx, 5); err != nil {
+		t.Fatalf("GetTargetsWithRecentChecksContext failed: %v", err)
+	}
+}
 
 func setupTestDB(t *testing.T) (*TargetRepository, func()) {
 	tmpDir, err := os.MkdirTemp("", "uptime_test_*")

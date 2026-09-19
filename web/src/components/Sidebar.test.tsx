@@ -24,6 +24,15 @@ describe('Sidebar component', () => {
     expect(onSelect).toHaveBeenCalledWith(2);
   });
 
+  it('supports keyboard activation for targets and the collapse control', () => {
+    const onSelect = vi.fn();
+    render(<Sidebar targets={targets} selectedId={1} onSelect={onSelect} />);
+    fireEvent.keyDown(screen.getByText('GitHub'), { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(2);
+    fireEvent.keyDown(screen.getByText('Targets').closest('div')!, { key: ' ' });
+    expect(screen.getByText('▲')).toBeInTheDocument();
+  });
+
   it('toggles open state and changes indicator when header is clicked', () => {
     const onSelect = vi.fn();
     render(<Sidebar targets={targets} selectedId={1} onSelect={onSelect} />);
