@@ -20,7 +20,19 @@ export function Sidebar({ targets, selectedId, onSelect }: SidebarProps) {
 
   return (
     <aside className="app-sidebar">
-      <div className="sidebar-header" onClick={toggleOpen}>
+      <div
+        className="sidebar-header"
+        onClick={toggleOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleOpen();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+      >
         <h2 className="sidebar-title">Targets</h2>
         <span className="sidebar-indicator">{isOpen ? '▲' : '▼'}</span>
       </div>
@@ -29,6 +41,15 @@ export function Sidebar({ targets, selectedId, onSelect }: SidebarProps) {
           <li
             key={t.id}
             onClick={() => onSelect(t.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(t.id);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-current={selectedId === t.id ? 'true' : undefined}
             className={`sidebar-item ${selectedId === t.id ? 'active' : ''}`}
           >
             {t.name}

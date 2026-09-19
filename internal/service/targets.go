@@ -1,6 +1,9 @@
 package service
 
-import "uptime/internal/database"
+import (
+	"context"
+	"uptime/internal/database"
+)
 
 type TargetService struct {
 	repo *database.TargetRepository
@@ -16,6 +19,10 @@ func (s *TargetService) GetTargets() ([]database.Target, error) {
 
 func (s *TargetService) GetTargetsWithRecentChecks(limit int) ([]database.TargetWithChecks, error) {
 	return s.repo.GetTargetsWithRecentChecks(limit)
+}
+
+func (s *TargetService) GetTargetsWithRecentChecksContext(ctx context.Context, limit int) ([]database.TargetWithChecks, error) {
+	return s.repo.GetTargetsWithRecentChecksContext(ctx, limit)
 }
 
 // CreateTarget creates a new target and returns it.
@@ -34,6 +41,10 @@ func (s *TargetService) UpdateTarget(id int, name string, schedule string) (*dat
 		return nil, err
 	}
 	return s.repo.GetTargetByID(id)
+}
+
+func (s *TargetService) GetTargetByIDContext(ctx context.Context, id int) (*database.Target, error) {
+	return s.repo.GetTargetByIDContext(ctx, id)
 }
 
 // DeleteTarget deletes a target by ID.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function Header({
   isLoggedIn,
@@ -13,6 +13,12 @@ export function Header({
   const [token, setToken] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('uptimeTheme') === 'dark');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+    localStorage.setItem('uptimeTheme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -37,6 +43,13 @@ export function Header({
         <span className="app-title">Uptime</span>
       </div>
       <div className="header-actions">
+        <button
+          className="header-btn"
+          onClick={() => setDarkMode((current) => !current)}
+          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
         {isLoggedIn ? (
           <button className="header-btn" onClick={onLogout}>
             Logout

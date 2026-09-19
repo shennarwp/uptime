@@ -39,9 +39,9 @@ func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 // @Produce json
 // @Success 200 {array} database.TargetWithChecks "List of targets with recent checks"
 // @Failure 500 {string} string "Internal server error"
-// @Router /api/targets [get]
-func (h *TargetHandler) GetTargets(w http.ResponseWriter, _ *http.Request) {
-	targets, err := h.svc.GetTargetsWithRecentChecks(1500)
+// @Router /api/v1/targets [get]
+func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
+	targets, err := h.svc.GetTargetsWithRecentChecksContext(r.Context(), 1500)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,7 +64,7 @@ func (h *TargetHandler) GetTargets(w http.ResponseWriter, _ *http.Request) {
 // @Failure 400 {string} string "Invalid request"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
-// @Router /api/targets [post]
+// @Router /api/v1/targets [post]
 func (h *TargetHandler) CreateTarget(w http.ResponseWriter, r *http.Request) {
 	var req CreateTargetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -114,7 +114,7 @@ func (h *TargetHandler) CreateTarget(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Target not found"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
-// @Router /api/target/{id} [put]
+// @Router /api/v1/target/{id} [put]
 func (h *TargetHandler) UpdateTarget(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -163,7 +163,7 @@ func (h *TargetHandler) UpdateTarget(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Target not found"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
-// @Router /api/target/{id} [delete]
+// @Router /api/v1/target/{id} [delete]
 func (h *TargetHandler) DeleteTarget(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {

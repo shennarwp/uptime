@@ -1,8 +1,10 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"log"
+	"time"
 )
 
 type TargetRepository struct {
@@ -35,8 +37,18 @@ func scanTarget(scanner interface{ Scan(dest ...any) error }) (Target, error) {
 	return t, nil
 }
 
+func dbContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, 2*time.Second)
+}
+
 func (r *TargetRepository) GetTargets() ([]Target, error) {
-	rows, err := r.db.Query("SELECT " + targetColumns + " FROM targets")
+	return r.GetTargetsContext(context.Background())
+}
+
+func (r *TargetRepository) GetTargetsContext(ctx context.Context) ([]Target, error) {
+	ctx, cancel := dbContext(ctx)
+	defer cancel()
+	rows, err := r.db.QueryContext(ctx, "SELECT "+targetColumns+" FROM targets")
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +71,13 @@ func (r *TargetRepository) GetTargets() ([]Target, error) {
 }
 
 func (r *TargetRepository) GetTargetByID(id int) (*Target, error) {
-	t, err := scanTarget(r.db.QueryRow("SELECT "+targetColumns+" FROM targets WHERE id = ?", id))
+	return r.GetTargetByIDContext(context.Background(), id)
+}
+
+func (r *TargetRepository) GetTargetByIDContext(ctx context.Context, id int) (*Target, error) {
+	ctx, cancel := dbContext(ctx)
+	defer cancel()
+	t, err := scanTarget(r.db.QueryRowContext(ctx, "SELECT "+targetColumns+" FROM targets WHERE id = ?", id))
 	if err != nil {
 		return nil, err
 	}
@@ -163,14 +181,18 @@ func (r *TargetRepository) CloseIncident(id int) error {
 }
 
 func (r *TargetRepository) GetTargetsWithRecentChecks(limit int) ([]TargetWithChecks, error) {
-	targets, err := r.GetTargets()
+	return r.GetTargetsWithRecentChecksContext(context.Background(), limit)
+}
+
+func (r *TargetRepository) GetTargetsWithRecentChecksContext(ctx context.Context, limit int) ([]TargetWithChecks, error) {
+	targets, err := r.GetTargetsContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []TargetWithChecks
 	for _, t := range targets {
-		checks, err := r.GetRecentChecksByTargetID(t.ID, limit)
+		checks, err := r.GetRecentChecksByTargetIDContext(ctx, t.ID, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +205,13 @@ func (r *TargetRepository) GetTargetsWithRecentChecks(limit int) ([]TargetWithCh
 }
 
 func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([]Check, error) {
-	rows, err := r.db.Query(
+	return r.GetRecentChecksByTargetIDContext(context.Background(), targetID, limit)
+}
+
+func (r *TargetRepository) GetRecentChecksByTargetIDContext(ctx context.Context, targetID int, limit int) ([]Check, error) {
+	ctx, cancel := dbContext(ctx)
+	defer cancel()
+	rows, err := r.db.QueryContext(ctx,
 		"SELECT id, target_id, status_code, response_time_ms, is_up, error_message, checked_at FROM checks WHERE target_id = ? ORDER BY checked_at DESC, id DESC LIMIT ?",
 		targetID, limit,
 	)
@@ -213,7 +241,11 @@ func (r *TargetRepository) GetRecentChecksByTargetID(targetID int, limit int) ([
 // GetLastCheckByTargetID returns the most recent check for a target, or nil if
 // the target has not been checked yet.
 func (r *TargetRepository) GetLastCheckByTargetID(targetID int) (*Check, error) {
-	checks, err := r.GetRecentChecksByTargetID(targetID, 1)
+	return r.GetLastCheckByTargetIDContext(context.Background(), targetID)
+}
+
+func (r *TargetRepository) GetLastCheckByTargetIDContext(ctx context.Context, targetID int) (*Check, error) {
+	checks, err := r.GetRecentChecksByTargetIDContext(ctx, targetID, 1)
 	if err != nil {
 		return nil, err
 	}

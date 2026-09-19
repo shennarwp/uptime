@@ -108,7 +108,7 @@ info:
   title: Uptime Monitor API
   version: "1.0"
 paths:
-  /api/auth/verify:
+  /api/v1/auth/verify:
     post:
       description: Checks whether the presented bearer token is valid. Returns 200
         when valid, 401 otherwise.
@@ -122,7 +122,7 @@ paths:
       summary: Verify API token
       tags:
       - auth
-  /api/target/{id}:
+  /api/v1/target/{id}:
     delete:
       description: Deletes a target and all its associated checks and incidents.
       parameters:
@@ -193,7 +193,7 @@ paths:
       summary: Update a target
       tags:
       - targets
-  /api/targets:
+  /api/v1/targets:
     get:
       description: Returns all monitored targets along with their most recent health
         checks (up to 1500 per target).
