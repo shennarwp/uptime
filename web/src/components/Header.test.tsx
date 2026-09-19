@@ -15,6 +15,15 @@ describe('Header component', () => {
     expect(onLogout).toHaveBeenCalled();
   });
 
+  it('toggles and persists dark mode', () => {
+    render(<Header isLoggedIn={false} onLogin={vi.fn()} onLogout={vi.fn()} />);
+    const toggle = screen.getByRole('button', { name: 'Switch to dark mode' });
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('uptimeTheme')).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeInTheDocument();
+  });
+
   it('opens the login popup and calls onLogin with the token on save', async () => {
     const onLogin = vi.fn().mockResolvedValue(true);
     render(<Header isLoggedIn={false} onLogin={onLogin} onLogout={vi.fn()} />);

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,5 +52,11 @@ func TestTargetService(t *testing.T) {
 	}
 	if len(twc) != initialCount+1 {
 		t.Errorf("expected %d targets with checks, got %d", initialCount+1, len(twc))
+	}
+	if _, err := svc.GetTargetsWithRecentChecksContext(context.Background(), 10); err != nil {
+		t.Fatalf("svc.GetTargetsWithRecentChecksContext error: %v", err)
+	}
+	if _, err := svc.GetTargetByIDContext(context.Background(), 1); err != nil {
+		t.Fatalf("svc.GetTargetByIDContext error: %v", err)
 	}
 }
