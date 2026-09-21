@@ -2,7 +2,7 @@
 # work inside the container has the same loop as the host (full toolchain).
 # Auth is mounted read-only at creation (see devcontainer.json) so nothing
 # secret is baked into the image.
-FROM mcr.microsoft.com/devcontainers/go:1-bookworm
+FROM mcr.microsoft.com/devcontainers/go:2-bookworm
 
 USER vscode
 RUN export HOME=/home/vscode \
