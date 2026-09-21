@@ -13,9 +13,9 @@ name: 'Scan with CodeQL'
 
 on:
   push:
-    branches: ['main']
+    branches: ['master']
   pull_request:
-    branches: ['main']
+    branches: ['master']
   schedule:
     - cron: '30 1 * * *'
   workflow_dispatch: # Allows manual triggering
