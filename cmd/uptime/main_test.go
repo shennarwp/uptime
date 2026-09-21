@@ -22,3 +22,19 @@ func TestShutdownStopsPollingBeforeServer(t *testing.T) {
 		t.Fatalf("shutdown failed: %v", err)
 	}
 }
+
+func TestShutdownContinuesWhenPollingDoesNotStopBeforeDeadline(t *testing.T) {
+	db, err := database.Open(filepath.Join(t.TempDir(), "shutdown-timeout.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	polling := service.NewPollingService(database.NewTargetRepository(db), "")
+	parent, cancelParent := context.WithCancel(context.Background())
+	cancelParent()
+
+	if err := shutdown(parent, func() {}, polling, &http.Server{}); err != nil {
+		t.Fatalf("shutdown failed: %v", err)
+	}
+}
