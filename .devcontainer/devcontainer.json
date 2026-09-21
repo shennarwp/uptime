@@ -8,8 +8,8 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "ghcr.io/devcontainers/features/node:2": {
-      "version": "24.0.2"
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24.21.0"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
