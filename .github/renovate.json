@@ -20,7 +20,7 @@
     ":dependencyDashboard",
     "group:recommended"
   ],
-  "baseBranchPatterns": ["main"],
+  "baseBranchPatterns": ["master"],
   "rebaseWhen": "conflicted",
   "addLabels": ["dependencies", "renovate"],
   "rangeStrategy": "bump",
