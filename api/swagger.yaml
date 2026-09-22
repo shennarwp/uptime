@@ -26,6 +26,44 @@ definitions:
         description: TargetID references the target this check belongs to.
         type: integer
     type: object
+  database.Incident:
+    properties:
+      cause:
+        description: Cause describes the reason for the incident, if known.
+        type: string
+      created_at:
+        description: CreatedAt is when the incident record was created.
+        type: string
+      ended_at:
+        description: EndedAt is when the incident ended, if it has been resolved.
+        type: string
+      id:
+        description: ID is the unique identifier of the incident.
+        type: integer
+      is_read:
+        description: IsRead indicates whether the incident has been acknowledged.
+        type: boolean
+      resolved:
+        description: Resolved indicates whether the incident has been resolved.
+        type: boolean
+      started_at:
+        description: StartedAt is when the incident started.
+        type: string
+      target_id:
+        description: TargetID references the target this incident belongs to.
+        type: integer
+      target_name:
+        description: TargetName and TargetURL identify the affected item in list responses.
+        type: string
+      target_url:
+        type: string
+      timestamp:
+        description: Timestamp is when the incident occurred.
+        type: string
+      type:
+        description: Type identifies the kind of incident.
+        type: string
+    type: object
   database.Target:
     properties:
       cert_expires_at:
@@ -122,6 +160,74 @@ paths:
       summary: Verify API token
       tags:
       - auth
+  /api/v1/events:
+    get:
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: Server-sent events stream
+          schema:
+            type: string
+      summary: Stream target updates
+      tags:
+      - events
+  /api/v1/incident/{id}/read:
+    patch:
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Incident marked as read
+        "400":
+          description: Invalid incident ID
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Mark an incident as read
+      tags:
+      - incidents
+  /api/v1/incidents:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of incidents
+          schema:
+            items:
+              $ref: '#/definitions/database.Incident'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: List incidents
+      tags:
+      - incidents
+  /api/v1/incidents/read:
+    post:
+      responses:
+        "204":
+          description: Incidents marked as read
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Mark all incidents as read
+      tags:
+      - incidents
   /api/v1/target/{id}:
     delete:
       description: Deletes a target and all its associated checks and incidents.

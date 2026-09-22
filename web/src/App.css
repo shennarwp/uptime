@@ -184,6 +184,135 @@ input:focus-visible {
   background-color: var(--active-bg);
 }
 
+.incident-bell {
+  position: relative;
+}
+
+.incident-bell-button {
+  position: relative;
+  display: grid;
+  min-width: 36px;
+  min-height: 34px;
+  padding: 6px 10px;
+  place-items: center;
+}
+
+.incident-unread-dot {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--header-bg);
+  border-radius: 50%;
+  background: #dc2626;
+}
+
+.incident-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(620px, calc(100vh - 90px));
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.incident-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.incident-panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.incident-mark-all,
+.incident-read-button {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.incident-mark-all {
+  padding: 6px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.incident-mark-all:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.incident-list {
+  display: grid;
+}
+
+.incident-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.incident-item:last-child {
+  border-bottom: 0;
+}
+
+.incident-item-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.incident-item-content strong {
+  font-size: 14px;
+}
+
+.incident-item-content a,
+.incident-item-content time {
+  overflow: hidden;
+  color: var(--subtext-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.incident-item.unread {
+  border-left: 3px solid #dc2626;
+  padding-left: 9px;
+}
+
+.incident-read-button {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+}
+
+.incident-empty {
+  margin: 20px 0 4px;
+  color: var(--subtext-color);
+  text-align: center;
+}
+
 .app-body {
   display: flex;
   flex: 1;
@@ -647,5 +776,15 @@ input:focus-visible {
   }
   .modal {
     max-width: 320px;
+  }
+
+  .incident-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding: 20px 16px;
   }
 }

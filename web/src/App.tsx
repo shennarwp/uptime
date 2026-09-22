@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { TargetCard } from './components/TargetCard';
 import { TargetFormModal, type TargetFormValues } from './components/TargetFormModal';
+import type { Incident } from './components/IncidentBell';
 
 type Check = {
   id: number;
@@ -30,6 +31,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
     () => localStorage.getItem('uptimeApiToken') !== null,
   );
@@ -54,6 +56,17 @@ function App() {
       events?.close();
       clearInterval(interval);
     };
+  }, []);
+
+  useEffect(() => {
+    const loadIncidents = () => {
+      fetch('/api/v1/incidents')
+        .then((res) => res.json())
+        .then((data) => setIncidents(data));
+    };
+    loadIncidents();
+    const interval = setInterval(loadIncidents, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSelect = (id: number) => {
@@ -84,6 +97,30 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('uptimeApiToken');
     setIsLoggedIn(false);
+  };
+
+  const markIncidentRead = async (id: number) => {
+    const token = localStorage.getItem('uptimeApiToken') ?? '';
+    const res = await fetch(`/api/v1/incident/${id}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setIncidents((current) =>
+        current.map((incident) => (incident.id === id ? { ...incident, is_read: true } : incident)),
+      );
+    }
+  };
+
+  const markAllIncidentsRead = async () => {
+    const token = localStorage.getItem('uptimeApiToken') ?? '';
+    const res = await fetch('/api/v1/incidents/read', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setIncidents((current) => current.map((incident) => ({ ...incident, is_read: true })));
+    }
   };
 
   const handleUpdateTarget = async (id: number, name: string, schedule: string) => {
@@ -154,7 +191,14 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header isLoggedIn={isLoggedIn} onLogin={handleLogin} onLogout={handleLogout} />
+      <Header
+        isLoggedIn={isLoggedIn}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        incidents={incidents}
+        onMarkIncidentRead={markIncidentRead}
+        onMarkAllIncidentsRead={markAllIncidentsRead}
+      />
       <div className="app-body">
         <Sidebar targets={targets} selectedId={selectedId} onSelect={handleSelect} />
         <main className="app-main">
