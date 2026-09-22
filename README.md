@@ -21,8 +21,8 @@ A lightweight, self-hosted uptime monitoring application featuring a Go backend 
 
 ### Prerequisites
 
-- **Go** (v1.26 or newer)
-- **Node.js** (v18 or newer recommended) & npm
+- **Go** (v1.27.1 or newer)
+- **Node.js** (v24.21.0 or newer recommended) & npm
 
 ---
 
@@ -83,18 +83,18 @@ docker run --detach \
   --name uptime \
   --restart always \
   -v ~/uptime/data:/app/data \
-  --expose 80 \
+  -p 80:80 \
   shennarwp/uptime:alpine-latest
 ```
 
 Notes:
-- The image exposes port `80` (nginx serving the React frontend and proxying `/api` to the Go backend on `:8080`).
+- The image serves port `80` (nginx serving the React frontend and proxying `/api` to the Go backend on `:8080`). The `-p 80:80` mapping is required when running the container directly; deployments behind an external reverse proxy can use an internal network instead.
 - `UPTIME_DB_PATH` defaults to `/app/data/uptime.db`; the SQLite database (including its WAL files) lives in the mounted volume, so mount a directory (not a single file) or data will be lost on container recreation.
 - Override the database path at runtime with `-e UPTIME_DB_PATH=/some/other/path.db`.
 
 ### Protecting mutating endpoints
 
-Write endpoints (`PUT /api/target/{id}`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`.
+Mutating endpoints (`POST /api/v1/targets`, `PUT /api/v1/target/{id}`, and `DELETE /api/v1/target/{id}`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`. The equivalent `/api/...` paths remain available as compatibility aliases.
 
 ```bash
 docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
@@ -102,7 +102,7 @@ docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
 
 If `UPTIME_API_TOKEN` is unset the guard **fails closed** — all writes are denied (a warning is logged at startup). You must set the variable for the edit/login flow to work.
 
-The web UI has a **Login** button in the header. Entering a token calls `POST /api/auth/verify` to confirm it's correct; on success the token is stored in the browser's `localStorage` and the button becomes **Logout**. The edit buttons on target cards are only shown while logged in, and the token is cleared automatically if a save is ever rejected with 401.
+The web UI has a **Login** button in the header. Entering a token calls `POST /api/v1/auth/verify` to confirm it's correct; on success the token is stored in the browser's `localStorage` and the button becomes **Logout**. The add, edit, and delete controls are only shown while logged in, and the token is cleared automatically if a mutation is ever rejected with 401.
 
 ---
 
