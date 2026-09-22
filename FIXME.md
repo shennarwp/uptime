@@ -7,7 +7,7 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 ## Backend / API
 
 ### High Priority
-- [ ] **Incidents API** - `Incident` model exists in `internal/database/models.go` but no REST endpoints. Add `GET /api/targets/{id}/incidents` and `GET /api/incidents` for downtime history.
+- [ ] **Incidents API and persistence** - `Incident` model and repository methods exist in `internal/database/`, but there are no REST endpoints, frontend view, or polling-service calls to create and close incidents. Add downtime recording plus `GET /api/targets/{id}/incidents` and `GET /api/incidents`.
 - [ ] **Pagination & Filtering** - `GET /api/targets` returns all targets (up to 1500 checks each). Add `?limit=&offset=` and `?status=up|down` query params.
 - [ ] **Structured Logging** - Replace `log.Printf` with JSON logger (zerolog/zap) in `internal/service/polling.go` and handlers for observability.
 
@@ -15,7 +15,7 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 - [ ] **CORS Configuration** - Add CORS middleware if API consumed by external frontends.
 - [ ] **Rate Limiting** - Add middleware for auth/abuse protection on mutating endpoints.
 - [ ] **Config File Support** - Move from env-only to config file (YAML/TOML) for complex deployments.
-- [ ] **Request Validation Middleware** - Centralize validation (currently duplicated in `internal/handler/validation.go` and handlers).
+- [ ] **Request Validation Middleware** - Move request validation from handler methods into reusable middleware or request-schema validation. The underlying field validators are already shared in `internal/handler/validation.go`.
 
 ### Low Priority
 - [ ] **Metrics Endpoint** - Add `/metrics` for Prometheus scraping (request latency, check counts, etc.).
@@ -47,7 +47,7 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 
 ### Low Priority
 - [ ] **Helm Chart** - Package for Kubernetes deployment.
-- [ ] **docker-compose.yml** - Add for local development with all services.
+- [x] **docker-compose.yml** - A compose file exists for the image-based deployment, using the external `nginx` network. A self-contained local-development stack remains optional.
 
 ---
 
@@ -63,7 +63,7 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 
 ## Documentation
 
-- [ ] **API Docs** - Host Swagger UI at `/swagger/` in production (currently only in dev).
+- [x] **API Docs** - Swagger UI is registered unconditionally at `/swagger/` by the Go server and is included in the production image. Keep the generated spec synchronized after API changes.
 - [ ] **Architecture Decision Records (ADRs)** - Document key decisions (SQLite, cron scheduling, etc.).
 - [ ] **Contributing Guide** - Add `CONTRIBUTING.md` with setup, test, and PR process.
 
