@@ -47,6 +47,8 @@ func main() {
 	repo := database.NewTargetRepository(db)
 	svc := service.NewTargetService(repo)
 	h := handler.NewTargetHandler(svc)
+	incidentSvc := service.NewIncidentService(repo)
+	incidentHandler := handler.NewIncidentHandler(incidentSvc)
 	events := service.NewEventBroker()
 
 	pollingSvc := service.NewPollingService(repo, os.Getenv("UPTIME_NTFY_URL"), events)
@@ -54,7 +56,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	go pollingSvc.Start(ctx)
 
-	mux := handler.NewRouter(h, events)
+	mux := handler.NewRouter(h, events, incidentHandler)
 	mux.HandleFunc("GET /healthz", healthCheck(db))
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 

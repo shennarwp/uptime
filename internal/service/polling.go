@@ -231,7 +231,12 @@ func (s *PollingService) checkCertificates() {
 		}
 		logCertExpiry(t.URL, notAfter)
 		expiresAt := notAfter.Format(time.RFC3339)
-		daysLeft := int(time.Until(notAfter).Hours() / 24)
+		now := time.Now
+		if s.now != nil {
+			now = s.now
+		}
+		daysLeft := int(notAfter.Sub(now().UTC()).Hours() / 24)
+		s.recordCertificateIncidents(t, notAfter, daysLeft)
 
 		notified30dAt, notified10dDate := s.certNotify(t, daysLeft, expiresAt)
 
@@ -242,6 +247,56 @@ func (s *PollingService) checkCertificates() {
 		}
 		if err := s.repo.UpdateCertState(t.ID, expiresAt, notified30dAt, notified10dDate); err != nil {
 			log.Printf("[Polling] Error saving cert state for target %s (%s): %v", t.Name, t.URL, err)
+		}
+	}
+}
+
+func (s *PollingService) recordCertificateIncidents(t database.Target, notAfter time.Time, daysLeft int) {
+	now := time.Now
+	if s.now != nil {
+		now = s.now
+	}
+	previousDays := 9999
+	if t.CertExpiresAt != nil {
+		if previousExpiry, err := time.Parse(time.RFC3339, *t.CertExpiresAt); err == nil {
+			previousDays = int(previousExpiry.Sub(now().UTC()).Hours() / 24)
+		}
+	}
+	thresholds := []struct {
+		limit    int
+		typeName string
+		cause    string
+	}{
+		{certNotify30dDays, database.IncidentTypeCert30Days, "Certificate enters 30-day expiry window"},
+		{certExpiryWarningDays, database.IncidentTypeCert10Days, "Certificate enters 10-day expiry window"},
+		{0, database.IncidentTypeCertExpired, "Certificate has expired"},
+	}
+	fingerprint := notAfter.Format(time.RFC3339)
+	for _, threshold := range thresholds {
+		if threshold.typeName == database.IncidentTypeCertExpired && notAfter.After(now().UTC()) {
+			continue
+		}
+		if daysLeft > threshold.limit || previousDays <= threshold.limit {
+			continue
+		}
+		exists, err := s.repo.HasIncident(t.ID, threshold.typeName, fingerprint)
+		if err != nil {
+			log.Printf("[Polling] Error checking certificate incident for target %s: %v", t.Name, err)
+			continue
+		}
+		if exists {
+			continue
+		}
+		cause := threshold.cause
+		incident := &database.Incident{
+			TargetID:    t.ID,
+			StartedAt:   database.Now(),
+			Cause:       &cause,
+			Type:        threshold.typeName,
+			Fingerprint: &fingerprint,
+		}
+		if err := s.repo.CreateIncident(incident); err != nil {
+			log.Printf("[Polling] Error recording certificate incident for target %s: %v", t.Name, err)
 		}
 	}
 }
@@ -489,6 +544,7 @@ func (s *PollingService) pingTarget(t database.Target) {
 			ErrorMessage:   &errMsg,
 		}
 		_ = s.repo.CreateCheck(check)
+		s.recordStatusIncident(t, prev, check)
 		if s.broker != nil {
 			s.broker.Publish(UpdateEvent{TargetID: t.ID})
 		}
@@ -518,10 +574,32 @@ func (s *PollingService) pingTarget(t database.Target) {
 		IsUp:           isUp,
 	}
 	_ = s.repo.CreateCheck(check)
+	s.recordStatusIncident(t, prev, check)
 	if s.broker != nil {
 		s.broker.Publish(UpdateEvent{TargetID: t.ID})
 	}
 	s.notifyTarget(t, prev, check)
+}
+
+func (s *PollingService) recordStatusIncident(t database.Target, previous, current *database.Check) {
+	if previous == nil || previous.IsUp == current.IsUp {
+		return
+	}
+	incidentType := database.IncidentTypeGoingDown
+	cause := "Target went down after being up"
+	if current.IsUp {
+		incidentType = database.IncidentTypeGoingUp
+		cause = "Target went up after being down"
+	}
+	incident := &database.Incident{
+		TargetID:  t.ID,
+		StartedAt: current.CheckedAt,
+		Type:      incidentType,
+		Cause:     &cause,
+	}
+	if err := s.repo.CreateIncident(incident); err != nil {
+		log.Printf("[Polling] Error recording status incident for target %s: %v", t.Name, err)
+	}
 }
 
 func equalStringPtr(a, b *string) bool {

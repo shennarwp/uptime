@@ -31,6 +31,116 @@
                 }
             }
         },
+        "/api/v1/events": {
+            "get": {
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Stream target updates",
+                "responses": {
+                    "200": {
+                        "description": "Server-sent events stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/incident/{id}/read": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "incidents"
+                ],
+                "summary": "Mark an incident as read",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Incident ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Incident marked as read"
+                    },
+                    "400": {
+                        "description": "Invalid incident ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/incidents": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "incidents"
+                ],
+                "summary": "List incidents",
+                "responses": {
+                    "200": {
+                        "description": "List of incidents",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/database.Incident"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/incidents/read": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "incidents"
+                ],
+                "summary": "Mark all incidents as read",
+                "responses": {
+                    "204": {
+                        "description": "Incidents marked as read"
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/target/{id}": {
             "put": {
                 "security": [
@@ -252,6 +362,58 @@
                 "target_id": {
                     "description": "TargetID references the target this check belongs to.",
                     "type": "integer"
+                }
+            }
+        },
+        "database.Incident": {
+            "type": "object",
+            "properties": {
+                "cause": {
+                    "description": "Cause describes the reason for the incident, if known.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt is when the incident record was created.",
+                    "type": "string"
+                },
+                "ended_at": {
+                    "description": "EndedAt is when the incident ended, if it has been resolved.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the incident.",
+                    "type": "integer"
+                },
+                "is_read": {
+                    "description": "IsRead indicates whether the incident has been acknowledged.",
+                    "type": "boolean"
+                },
+                "resolved": {
+                    "description": "Resolved indicates whether the incident has been resolved.",
+                    "type": "boolean"
+                },
+                "started_at": {
+                    "description": "StartedAt is when the incident started.",
+                    "type": "string"
+                },
+                "target_id": {
+                    "description": "TargetID references the target this incident belongs to.",
+                    "type": "integer"
+                },
+                "target_name": {
+                    "description": "TargetName and TargetURL identify the affected item in list responses.",
+                    "type": "string"
+                },
+                "target_url": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "description": "Timestamp is when the incident occurred.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type identifies the kind of incident.",
+                    "type": "string"
                 }
             }
         },

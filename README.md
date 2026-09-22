@@ -11,6 +11,7 @@ A lightweight, self-hosted uptime monitoring application featuring a Go backend 
   - Compact check history bars with recent status check indicators.
   - Collapsible sidebar navigation for mobile devices with indicator arrows.
   - URL truncation and expansion on hover.
+- **Incident Notifications:** Records target up/down transitions and certificate expiry thresholds (30 days, 10 days, and expired) in SQLite. Logged-in users can open the bell notification panel, see the affected target, URL, incident type, and timestamp, and mark individual incidents or all incidents as read. The panel is a popover on desktop and a full-screen view on mobile.
 - **Comprehensive Testing:**
   - Go unit tests for database models, repositories, polling service, and HTTP handlers.
   - Vitest & React Testing Library component tests for the frontend.
@@ -94,7 +95,7 @@ Notes:
 
 ### Protecting mutating endpoints
 
-Mutating endpoints (`POST /api/v1/targets`, `PUT /api/v1/target/{id}`, and `DELETE /api/v1/target/{id}`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`. The equivalent `/api/...` paths remain available as compatibility aliases.
+Mutating endpoints (`POST /api/v1/targets`, `PUT /api/v1/target/{id}`, `DELETE /api/v1/target/{id}`, `PATCH /api/v1/incident/{id}/read`, and `POST /api/v1/incidents/read`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`. The equivalent `/api/...` paths remain available as compatibility aliases.
 
 ```bash
 docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
@@ -103,6 +104,12 @@ docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
 If `UPTIME_API_TOKEN` is unset the guard **fails closed** — all writes are denied (a warning is logged at startup). You must set the variable for the edit/login flow to work.
 
 The web UI has a **Login** button in the header. Entering a token calls `POST /api/v1/auth/verify` to confirm it's correct; on success the token is stored in the browser's `localStorage` and the button becomes **Logout**. The add, edit, and delete controls are only shown while logged in, and the token is cleared automatically if a mutation is ever rejected with 401.
+
+### Incidents API
+
+`GET /api/v1/incidents` returns incidents newest first. Each incident includes its type, affected target name and URL, timestamp, and `is_read` state. Incident types are `going_down`, `going_up`, `cert_30_days`, `cert_10_days`, and `cert_expired`.
+
+Use `PATCH /api/v1/incident/{id}/read` to acknowledge one incident or `POST /api/v1/incidents/read` to acknowledge all incidents. Both operations require the bearer token.
 
 ---
 

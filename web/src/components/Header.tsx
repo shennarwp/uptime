@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
+import { IncidentBell, type Incident } from './IncidentBell';
 
 export function Header({
   isLoggedIn,
   onLogin,
   onLogout,
+  incidents = [],
+  onMarkIncidentRead = async () => {},
+  onMarkAllIncidentsRead = async () => {},
 }: {
   isLoggedIn: boolean;
   onLogin: (token: string) => Promise<boolean>;
   onLogout: () => void;
+  incidents?: Incident[];
+  onMarkIncidentRead?: (id: number) => Promise<void>;
+  onMarkAllIncidentsRead?: () => Promise<void>;
 }) {
   const [showLogin, setShowLogin] = useState(false);
   const [token, setToken] = useState('');
@@ -51,9 +58,16 @@ export function Header({
           {darkMode ? '☀️' : '🌙'}
         </button>
         {isLoggedIn ? (
-          <button className="header-btn" onClick={onLogout}>
-            Logout
-          </button>
+          <>
+            <IncidentBell
+              incidents={incidents}
+              onMarkRead={onMarkIncidentRead}
+              onMarkAllRead={onMarkAllIncidentsRead}
+            />
+            <button className="header-btn" onClick={onLogout}>
+              Logout
+            </button>
+          </>
         ) : (
           <button className="header-btn" onClick={() => setShowLogin(true)}>
             Login

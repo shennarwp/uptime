@@ -18,9 +18,12 @@ func TestOpenAPIContractContainsImplementedEndpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	required := map[string][]string{
-		"/api/v1/targets":     {"get", "post"},
-		"/api/v1/target/{id}": {"put", "delete"},
-		"/api/v1/auth/verify": {"post"},
+		"/api/v1/targets":            {"get", "post"},
+		"/api/v1/target/{id}":        {"put", "delete"},
+		"/api/v1/auth/verify":        {"post"},
+		"/api/v1/incidents":          {"get"},
+		"/api/v1/incident/{id}/read": {"patch"},
+		"/api/v1/incidents/read":     {"post"},
 	}
 	for path, methods := range required {
 		for _, method := range methods {

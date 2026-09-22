@@ -93,7 +93,15 @@ type Check struct {
 	CheckedAt Timestamp `json:"checked_at" swaggertype:"primitive,string"`
 }
 
-// Incident represents a period during which a target was down.
+const (
+	IncidentTypeGoingDown   = "going_down"
+	IncidentTypeGoingUp     = "going_up"
+	IncidentTypeCert30Days  = "cert_30_days"
+	IncidentTypeCert10Days  = "cert_10_days"
+	IncidentTypeCertExpired = "cert_expired"
+)
+
+// Incident represents a notable change affecting a monitored target.
 type Incident struct {
 	// ID is the unique identifier of the incident.
 	ID int `json:"id"`
@@ -109,4 +117,15 @@ type Incident struct {
 	Resolved bool `json:"resolved"`
 	// CreatedAt is when the incident record was created.
 	CreatedAt Timestamp `json:"created_at" swaggertype:"primitive,string"`
+	// Timestamp is when the incident occurred.
+	Timestamp Timestamp `json:"timestamp" swaggertype:"primitive,string"`
+	// Type identifies the kind of incident.
+	Type string `json:"type"`
+	// Fingerprint prevents repeated certificate incidents for the same expiry.
+	Fingerprint *string `json:"-"`
+	// IsRead indicates whether the incident has been acknowledged.
+	IsRead bool `json:"is_read"`
+	// TargetName and TargetURL identify the affected item in list responses.
+	TargetName string `json:"target_name"`
+	TargetURL  string `json:"target_url"`
 }

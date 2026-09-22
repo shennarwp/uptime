@@ -159,15 +159,83 @@ func (r *TargetRepository) CreateCheck(c *Check) error {
 }
 
 func (r *TargetRepository) CreateIncident(inc *Incident) error {
+	if inc.Type == "" {
+		inc.Type = IncidentTypeGoingDown
+	}
+	if inc.StartedAt.IsZero() {
+		inc.StartedAt = Now()
+	}
+	inc.Timestamp = inc.StartedAt
 	inc.CreatedAt = Now()
 	resolved := 0
 	if inc.Resolved {
 		resolved = 1
 	}
-	_, err := r.db.Exec(
-		"INSERT INTO incidents (target_id, started_at, ended_at, cause, resolved, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-		inc.TargetID, &inc.StartedAt, inc.EndedAt, inc.Cause, resolved, &inc.CreatedAt,
+	result, err := r.db.Exec(
+		"INSERT INTO incidents (target_id, started_at, ended_at, cause, resolved, created_at, type, fingerprint, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		inc.TargetID, &inc.StartedAt, inc.EndedAt, inc.Cause, resolved, &inc.CreatedAt, inc.Type, inc.Fingerprint, boolToInt(inc.IsRead),
 	)
+	if err != nil {
+		return err
+	}
+	id, err := result.LastInsertId()
+	inc.ID = int(id)
+	return err
+}
+
+func boolToInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
+func (r *TargetRepository) HasIncident(targetID int, incidentType string, fingerprint string) (bool, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM incidents WHERE target_id = ? AND type = ? AND fingerprint = ?", targetID, incidentType, fingerprint).Scan(&count)
+	return count > 0, err
+}
+
+const incidentColumns = "i.id, i.target_id, i.started_at, i.ended_at, i.cause, i.resolved, i.created_at, i.type, i.fingerprint, i.is_read, t.name, t.url"
+
+func scanIncident(scanner interface{ Scan(dest ...any) error }) (Incident, error) {
+	var incident Incident
+	var resolved, isRead int
+	err := scanner.Scan(
+		&incident.ID, &incident.TargetID, &incident.StartedAt, &incident.EndedAt, &incident.Cause,
+		&resolved, &incident.CreatedAt, &incident.Type, &incident.Fingerprint, &isRead,
+		&incident.TargetName, &incident.TargetURL,
+	)
+	incident.Resolved = resolved == 1
+	incident.IsRead = isRead == 1
+	incident.Timestamp = incident.StartedAt
+	return incident, err
+}
+
+func (r *TargetRepository) GetIncidents() ([]Incident, error) {
+	rows, err := r.db.Query("SELECT " + incidentColumns + " FROM incidents i JOIN targets t ON t.id = i.target_id ORDER BY i.started_at DESC, i.id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	incidents := make([]Incident, 0)
+	for rows.Next() {
+		incident, err := scanIncident(rows)
+		if err != nil {
+			return nil, err
+		}
+		incidents = append(incidents, incident)
+	}
+	return incidents, rows.Err()
+}
+
+func (r *TargetRepository) MarkIncidentRead(id int) error {
+	_, err := r.db.Exec("UPDATE incidents SET is_read = 1 WHERE id = ?", id)
+	return err
+}
+
+func (r *TargetRepository) MarkAllIncidentsRead() error {
+	_, err := r.db.Exec("UPDATE incidents SET is_read = 1 WHERE is_read = 0")
 	return err
 }
 

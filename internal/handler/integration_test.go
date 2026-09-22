@@ -23,7 +23,11 @@ func integrationRouter(t *testing.T) (*sql.DB, http.Handler) {
 	t.Cleanup(func() { _ = db.Close() })
 	t.Setenv("UPTIME_API_TOKEN", "integration-token")
 	repo := database.NewTargetRepository(db)
-	return db, NewRouter(NewTargetHandler(service.NewTargetService(repo)), service.NewEventBroker())
+	return db, NewRouter(
+		NewTargetHandler(service.NewTargetService(repo)),
+		service.NewEventBroker(),
+		NewIncidentHandler(service.NewIncidentService(repo)),
+	)
 }
 
 func TestAPIIntegrationCreateUpdateDelete(t *testing.T) {
@@ -77,5 +81,42 @@ func TestVersionedAndLegacyRoutes(t *testing.T) {
 		if response.Code != http.StatusOK {
 			t.Errorf("%s: expected 200, got %d", path, response.Code)
 		}
+	}
+}
+
+func TestIncidentAPIReadState(t *testing.T) {
+	db, router := integrationRouter(t)
+	result, err := db.Exec("INSERT INTO targets (name, url, schedule) VALUES ('incident target', 'https://example.com', '@every 1m')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	targetID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec("INSERT INTO incidents (target_id, started_at, cause, type) VALUES (?, datetime('now'), 'went down', 'going_down')", targetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	list := httptest.NewRecorder()
+	router.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/v1/incidents", nil))
+	if list.Code != http.StatusOK || !bytes.Contains(list.Body.Bytes(), []byte(`"is_read":false`)) {
+		t.Fatalf("list: unexpected response %d: %s", list.Code, list.Body.String())
+	}
+
+	mark := httptest.NewRequest(http.MethodPatch, "/api/v1/incident/1/read", nil)
+	mark.Header.Set("Authorization", "Bearer integration-token")
+	marked := httptest.NewRecorder()
+	router.ServeHTTP(marked, mark)
+	if marked.Code != http.StatusNoContent {
+		t.Fatalf("mark: expected 204, got %d: %s", marked.Code, marked.Body.String())
+	}
+	var isRead int
+	if err := db.QueryRow("SELECT is_read FROM incidents WHERE id = 1").Scan(&isRead); err != nil {
+		t.Fatal(err)
+	}
+	if isRead != 1 {
+		t.Fatalf("expected incident to be marked read")
 	}
 }
