@@ -151,6 +151,41 @@ func TestPollingService_RecordsFirstTransportFailureIncident(t *testing.T) {
 	}
 }
 
+func TestPollingService_RecordsTransportIncidentForExistingFailureStreak(t *testing.T) {
+	repo, cleanup := databaseTestRepo(t)
+	defer cleanup()
+	target := &database.Target{Name: "Existing DNS target", URL: "https://rwporo.com", Schedule: "@every 1m"}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatal(err)
+	}
+	errMessage := `Get "https://rwporo.com": dial tcp: lookup rwporo.com on 10.255.255.254:53: no such host`
+	if err := repo.CreateCheck(&database.Check{
+		TargetID:     target.ID,
+		IsUp:         false,
+		ErrorMessage: &errMessage,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := NewPollingService(repo, "")
+	svc.client = &http.Client{Transport: &sequenceTransport{
+		errors: []error{
+			&net.DNSError{Err: "no such host", Name: "rwporo.com", Server: "10.255.255.254:53"},
+			&net.DNSError{Err: "no such host", Name: "rwporo.com", Server: "10.255.255.254:53"},
+		},
+	}}
+	svc.pingTarget(*target)
+	svc.pingTarget(*target)
+
+	incidents, err := repo.GetIncidents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(incidents) != 1 || incidents[0].Type != database.IncidentTypeDNSError {
+		t.Fatalf("expected one DNS incident for the existing failure streak, got %+v", incidents)
+	}
+}
+
 func TestClassifyCheckError(t *testing.T) {
 	for _, test := range []struct {
 		name string

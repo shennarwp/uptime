@@ -196,6 +196,15 @@ func (r *TargetRepository) HasIncident(targetID int, incidentType string, finger
 	return count > 0, err
 }
 
+func (r *TargetRepository) HasIncidentSince(targetID int, incidentType string, since Timestamp) (bool, error) {
+	var count int
+	err := r.db.QueryRow(
+		"SELECT COUNT(*) FROM incidents WHERE target_id = ? AND type = ? AND started_at >= ?",
+		targetID, incidentType, &since,
+	).Scan(&count)
+	return count > 0, err
+}
+
 const incidentColumns = "i.id, i.target_id, i.started_at, i.ended_at, i.cause, i.resolved, i.created_at, i.type, i.fingerprint, i.is_read, t.name, t.url"
 
 func scanIncident(scanner interface{ Scan(dest ...any) error }) (Incident, error) {

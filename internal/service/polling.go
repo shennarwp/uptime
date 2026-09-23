@@ -639,7 +639,14 @@ func (s *PollingService) recordStatusIncident(t database.Target, previous, curre
 
 	if previous != nil && !previous.IsUp && previous.ErrorMessage != nil {
 		if classifyCheckErrorMessage(*previous.ErrorMessage) == failureType {
-			return
+			hasIncident, err := s.repo.HasIncidentSince(t.ID, failureType, previous.CheckedAt)
+			if err != nil {
+				log.Printf("[Polling] Error checking existing incident for target %s: %v", t.Name, err)
+				return
+			}
+			if hasIncident {
+				return
+			}
 		}
 	}
 
