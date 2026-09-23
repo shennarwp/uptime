@@ -17,6 +17,11 @@ const labels: Record<string, string> = {
   cert_30_days: 'Certificate has 30 days left',
   cert_10_days: 'Certificate has 10 days left',
   cert_expired: 'Certificate expired',
+  dns_error: 'DNS lookup failed',
+  timeout_error: 'Target check timed out',
+  connection_refused: 'Connection refused',
+  tls_error: 'TLS connection failed',
+  network_error: 'Network error',
 };
 
 function formatTimestamp(value: string) {

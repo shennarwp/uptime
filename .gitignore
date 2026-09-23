@@ -11,6 +11,7 @@
 /node_modules
 /web/node_modules
 /web/dist
+/web/coverage
 /web/.vite
 /web/.eslintcache
 /web/src/**/*.js

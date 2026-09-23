@@ -189,6 +189,40 @@ func TestTargetRepository_CRUDAndChecksAndIncidents(t *testing.T) {
 		t.Fatalf("failed to create incident: %v", err)
 	}
 
+	incidents, err := repo.GetIncidents()
+	if err != nil {
+		t.Fatalf("failed to get incidents: %v", err)
+	}
+	if len(incidents) != 1 || incidents[0].TargetName != target.Name || incidents[0].TargetURL != target.URL || incidents[0].IsRead {
+		t.Fatalf("unexpected incident list: %+v", incidents)
+	}
+	fingerprint := "cert-expiry"
+	certIncident := &Incident{TargetID: target.ID, Type: IncidentTypeCert30Days, Fingerprint: &fingerprint, Resolved: true, IsRead: true}
+	if err := repo.CreateIncident(certIncident); err != nil {
+		t.Fatalf("failed to create certificate incident: %v", err)
+	}
+	if err := repo.CreateIncident(&Incident{TargetID: 999999, Type: IncidentTypeGoingDown}); err == nil {
+		t.Fatal("expected foreign-key error when creating incident for missing target")
+	}
+	exists, err := repo.HasIncident(target.ID, IncidentTypeCert30Days, fingerprint)
+	if err != nil || !exists {
+		t.Fatalf("expected certificate incident fingerprint to exist, got exists=%v err=%v", exists, err)
+	}
+	exists, err = repo.HasIncident(target.ID, IncidentTypeCert30Days, "different")
+	if err != nil || exists {
+		t.Fatalf("expected different fingerprint to be absent, got exists=%v err=%v", exists, err)
+	}
+	if err := repo.MarkIncidentRead(inc.ID); err != nil {
+		t.Fatalf("failed to mark incident read: %v", err)
+	}
+	if err := repo.MarkAllIncidentsRead(); err != nil {
+		t.Fatalf("failed to mark all incidents read: %v", err)
+	}
+	incidents, err = repo.GetIncidents()
+	if err != nil || len(incidents) != 2 || !incidents[0].IsRead || !incidents[1].IsRead {
+		t.Fatalf("expected all incidents to be read, got incidents=%+v err=%v", incidents, err)
+	}
+
 	// Test CloseIncident (Assuming ID 1 or getting incident ID)
 	err = repo.CloseIncident(1)
 	if err != nil {

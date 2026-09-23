@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
 	"uptime/internal/database"
 
@@ -476,6 +478,24 @@ func shouldNotify(prev *database.Check, isUp bool) bool {
 	return prev != nil && !(prev.IsUp && isUp)
 }
 
+func classifyCheckError(err error) string {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return database.IncidentTypeDNSError
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return database.IncidentTypeTimeout
+	}
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return database.IncidentTypeRefused
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "tls") || strings.Contains(strings.ToLower(err.Error()), "certificate") {
+		return database.IncidentTypeTLSError
+	}
+	return database.IncidentTypeNetworkError
+}
+
 // postNotification posts a plain-text message to the configured ntfy URL. The
 // caller decides whether the notification is warranted and logs any failure.
 func (s *PollingService) postNotification(title, message string) error {
@@ -536,6 +556,7 @@ func (s *PollingService) pingTarget(t database.Target) {
 
 	if err != nil {
 		errMsg := err.Error()
+		errorType := classifyCheckError(err)
 		log.Printf("[Polling] Target %s (%s) - Error: %v (took %dms)", t.Name, t.URL, err, duration)
 		check := &database.Check{
 			TargetID:       t.ID,
@@ -544,7 +565,7 @@ func (s *PollingService) pingTarget(t database.Target) {
 			ErrorMessage:   &errMsg,
 		}
 		_ = s.repo.CreateCheck(check)
-		s.recordStatusIncident(t, prev, check)
+		s.recordStatusIncident(t, prev, check, errorType)
 		if s.broker != nil {
 			s.broker.Publish(UpdateEvent{TargetID: t.ID})
 		}
@@ -574,19 +595,23 @@ func (s *PollingService) pingTarget(t database.Target) {
 		IsUp:           isUp,
 	}
 	_ = s.repo.CreateCheck(check)
-	s.recordStatusIncident(t, prev, check)
+	s.recordStatusIncident(t, prev, check, "")
 	if s.broker != nil {
 		s.broker.Publish(UpdateEvent{TargetID: t.ID})
 	}
 	s.notifyTarget(t, prev, check)
 }
 
-func (s *PollingService) recordStatusIncident(t database.Target, previous, current *database.Check) {
+func (s *PollingService) recordStatusIncident(t database.Target, previous, current *database.Check, failureType string) {
 	if previous == nil || previous.IsUp == current.IsUp {
 		return
 	}
 	incidentType := database.IncidentTypeGoingDown
 	cause := "Target went down after being up"
+	if failureType != "" {
+		incidentType = failureType
+		cause = fmt.Sprintf("Target check failed: %s", failureType)
+	}
 	if current.IsUp {
 		incidentType = database.IncidentTypeGoingUp
 		cause = "Target went up after being down"

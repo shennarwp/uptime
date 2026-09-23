@@ -94,11 +94,16 @@ type Check struct {
 }
 
 const (
-	IncidentTypeGoingDown   = "going_down"
-	IncidentTypeGoingUp     = "going_up"
-	IncidentTypeCert30Days  = "cert_30_days"
-	IncidentTypeCert10Days  = "cert_10_days"
-	IncidentTypeCertExpired = "cert_expired"
+	IncidentTypeGoingDown    = "going_down"
+	IncidentTypeGoingUp      = "going_up"
+	IncidentTypeCert30Days   = "cert_30_days"
+	IncidentTypeCert10Days   = "cert_10_days"
+	IncidentTypeCertExpired  = "cert_expired"
+	IncidentTypeDNSError     = "dns_error"
+	IncidentTypeTimeout      = "timeout_error"
+	IncidentTypeRefused      = "connection_refused"
+	IncidentTypeTLSError     = "tls_error"
+	IncidentTypeNetworkError = "network_error"
 )
 
 // Incident represents a notable change affecting a monitored target.
