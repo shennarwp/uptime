@@ -212,6 +212,18 @@ func TestTargetRepository_CRUDAndChecksAndIncidents(t *testing.T) {
 	if err != nil || exists {
 		t.Fatalf("expected different fingerprint to be absent, got exists=%v err=%v", exists, err)
 	}
+	exists, err = repo.HasIncidentSince(target.ID, IncidentTypeGoingDown, inc.StartedAt)
+	if err != nil || !exists {
+		t.Fatalf("expected incident to exist since its start, got exists=%v err=%v", exists, err)
+	}
+	exists, err = repo.HasIncidentSince(
+		target.ID,
+		IncidentTypeGoingDown,
+		Timestamp{Time: time.Now().UTC().Add(time.Hour)},
+	)
+	if err != nil || exists {
+		t.Fatalf("expected no incident after the current time, got exists=%v err=%v", exists, err)
+	}
 	if err := repo.MarkIncidentRead(inc.ID); err != nil {
 		t.Fatalf("failed to mark incident read: %v", err)
 	}
