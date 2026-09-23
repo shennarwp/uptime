@@ -11,7 +11,7 @@ A lightweight, self-hosted uptime monitoring application featuring a Go backend 
   - Compact check history bars with recent status check indicators.
   - Collapsible sidebar navigation for mobile devices with indicator arrows.
   - URL truncation and expansion on hover.
-- **Incident Notifications:** Records target up/down transitions and certificate expiry thresholds (30 days, 10 days, and expired) in SQLite. Logged-in users can open the bell notification panel, see the affected target, URL, incident type, and timestamp, and mark individual incidents or all incidents as read. The panel is a popover on desktop and a full-screen view on mobile.
+- **Incident Notifications:** Records target status changes, certificate expiry thresholds, and common URL-check failures in SQLite. Logged-in users can open the incidents page from the bell button, see the affected target, URL, incident type, cause, and timestamp, and mark individual incidents or all incidents as read. The page is responsive on desktop and mobile.
 - **Comprehensive Testing:**
   - Go unit tests for database models, repositories, polling service, and HTTP handlers.
   - Vitest & React Testing Library component tests for the frontend.
@@ -109,7 +109,22 @@ The web UI has a **Login** button in the header. Entering a token calls `POST /a
 
 `GET /api/v1/incidents` returns incidents newest first. Each incident includes its type, affected target name and URL, timestamp, and `is_read` state. Incident types are `going_down`, `going_up`, `cert_30_days`, `cert_10_days`, `cert_expired`, `dns_error`, `timeout_error`, `connection_refused`, `tls_error`, and `network_error`.
 
-Health checks distinguish common transport failures: DNS lookup failures, timeouts, refused connections, TLS or certificate failures, and other network errors. HTTP 4xx and 5xx responses remain status incidents because the endpoint responded successfully at the transport layer.
+Health checks classify incidents as follows:
+
+| Type | Meaning |
+| --- | --- |
+| `going_down` | The target returned an HTTP 5xx response after previously being up. |
+| `going_up` | The target returned to an HTTP status below 500 after previously being down. |
+| `cert_30_days` | The TLS certificate entered the 30-day expiry window. |
+| `cert_10_days` | The TLS certificate entered the 10-day expiry window. |
+| `cert_expired` | The TLS certificate has already expired. |
+| `dns_error` | The hostname could not be resolved, including errors such as `lookup example.com ... no such host`. |
+| `timeout_error` | The connection or request exceeded its timeout. |
+| `connection_refused` | The target host actively refused the connection. |
+| `tls_error` | The TLS handshake or certificate validation failed for a reason other than an expiry notification. |
+| `network_error` | Another transport-level network failure occurred. |
+
+HTTP 4xx and 5xx responses remain status incidents because the endpoint responded successfully at the transport layer. Repeated transport failures of the same type in one failure streak are deduplicated; a new incident is recorded when the failure type changes or a missing incident is discovered for an existing failure streak.
 
 Use `PATCH /api/v1/incident/{id}/read` to acknowledge one incident or `POST /api/v1/incidents/read` to acknowledge all incidents. Both operations require the bearer token.
 
