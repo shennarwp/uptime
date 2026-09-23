@@ -38,6 +38,11 @@ describe('Header component', () => {
     expect(screen.getByRole('button', { name: 'View incidents' })).toBeInTheDocument();
   });
 
+  it('supports the default incident navigation callback', () => {
+    render(<Header isLoggedIn onLogin={vi.fn()} onLogout={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'View incidents' }));
+  });
+
   it('toggles and persists dark mode', () => {
     render(<Header isLoggedIn={false} onLogin={vi.fn()} onLogout={vi.fn()} />);
     const toggle = screen.getByRole('button', { name: 'Switch to dark mode' });
@@ -79,5 +84,16 @@ describe('Header component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.queryByLabelText('API Token')).not.toBeInTheDocument());
+  });
+
+  it('closes the login popup when clicking the overlay', () => {
+    const { container } = render(
+      <Header isLoggedIn={false} onLogin={vi.fn()} onLogout={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+    fireEvent.click(container.querySelector('.modal-overlay')!);
+
+    expect(screen.queryByLabelText('API Token')).not.toBeInTheDocument();
   });
 });

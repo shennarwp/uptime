@@ -206,6 +206,46 @@ func TestClassifyCheckError(t *testing.T) {
 	}
 }
 
+func TestClassifyCheckErrorMessage(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		message string
+		want    string
+	}{
+		{name: "dns", message: "lookup example.com: no such host", want: database.IncidentTypeDNSError},
+		{name: "timeout", message: "context deadline exceeded", want: database.IncidentTypeTimeout},
+		{name: "refused", message: "dial tcp: connection refused", want: database.IncidentTypeRefused},
+		{name: "tls", message: "x509: certificate is not valid", want: database.IncidentTypeTLSError},
+		{name: "network", message: "network is unreachable", want: database.IncidentTypeNetworkError},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := classifyCheckErrorMessage(test.message); got != test.want {
+				t.Fatalf("classifyCheckErrorMessage() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestPollingService_HandlesIncidentLookupError(t *testing.T) {
+	repo, cleanup := databaseTestRepo(t)
+	cleanup()
+	svc := NewPollingService(repo, "")
+	errorMessage := "lookup example.com: no such host"
+	svc.recordStatusIncident(
+		database.Target{ID: 1, Name: "Closed database target"},
+		&database.Check{
+			IsUp:         false,
+			ErrorMessage: &errorMessage,
+			CheckedAt:    database.Now(),
+		},
+		&database.Check{
+			IsUp:      false,
+			CheckedAt: database.Now(),
+		},
+		database.IncidentTypeDNSError,
+	)
+}
+
 type sequenceTransport struct {
 	errors []error
 	index  int

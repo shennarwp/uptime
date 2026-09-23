@@ -36,6 +36,30 @@ describe('App add-target tile', () => {
     expect(screen.queryByRole('button', { name: 'Add new target' })).not.toBeInTheDocument();
   });
 
+  it('renders a target from the dashboard data', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url === '/api/v1/targets'
+            ? [
+                {
+                  id: 1,
+                  name: 'Example target',
+                  url: 'https://example.com',
+                  schedule: '@every 1m',
+                  checks: [],
+                },
+              ]
+            : [],
+      }),
+    );
+
+    render(<App />);
+
+    expect((await screen.findAllByText('Example target')).length).toBe(2);
+  });
+
   it('shows the add tile when logged in and opens the add modal', async () => {
     localStorage.setItem('uptimeApiToken', 'tok');
     render(<App />);
@@ -121,6 +145,66 @@ describe('App add-target tile', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/incident/1/read',
       expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('returns from the incidents page and responds to browser history', async () => {
+    localStorage.setItem('uptimeApiToken', 'tok');
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'View incidents' }));
+    expect(await screen.findByRole('heading', { name: 'Incidents' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '← Back to targets' }));
+    expect(await screen.findByText('No targets configured.')).toBeInTheDocument();
+
+    window.history.pushState({}, '', '/incidents');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(await screen.findByRole('heading', { name: 'Incidents' })).toBeInTheDocument();
+  });
+
+  it('starts on the incidents page when the URL already points there', async () => {
+    localStorage.setItem('uptimeApiToken', 'tok');
+    window.history.pushState({}, '', '/incidents');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Incidents' })).toBeInTheDocument();
+  });
+
+  it('keeps incident state unchanged when read mutations fail', async () => {
+    localStorage.setItem('uptimeApiToken', 'tok');
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: url === '/api/v1/targets',
+        json: async () =>
+          url === '/api/v1/incidents'
+            ? [
+                {
+                  id: 1,
+                  type: 'going_down',
+                  target_name: 'Example',
+                  target_url: 'https://example.com',
+                  timestamp: '2026-09-22T12:00:00Z',
+                  started_at: '2026-09-22T12:00:00Z',
+                  is_read: false,
+                },
+              ]
+            : [],
+      }),
+    );
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'View incidents' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Target went down as read' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/incident/1/read',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/incidents/read',
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 });
