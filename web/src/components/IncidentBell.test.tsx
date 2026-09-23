@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { IncidentBell, type Incident } from './IncidentBell';
 
@@ -24,35 +24,24 @@ const incidents: Incident[] = [
 ];
 
 describe('IncidentBell', () => {
-  it('shows unread incidents and marks one incident as read', async () => {
-    const onMarkRead = vi.fn().mockResolvedValue(undefined);
-    render(<IncidentBell incidents={incidents} onMarkRead={onMarkRead} onMarkAllRead={vi.fn()} />);
+  it('shows the unread dot and opens the incidents page', () => {
+    const onOpenIncidents = vi.fn();
+    render(<IncidentBell incidents={incidents} onOpenIncidents={onOpenIncidents} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
-    expect(screen.getByText('Target went down')).toBeInTheDocument();
-    expect(screen.getByText('Certificate expired')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Mark Target went down as read' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View incidents' }));
 
-    await waitFor(() => expect(onMarkRead).toHaveBeenCalledWith(1));
+    expect(onOpenIncidents).toHaveBeenCalled();
+    expect(screen.getByLabelText('1 unread incidents')).toBeInTheDocument();
   });
 
-  it('marks all incidents as read and closes on outside click', async () => {
-    const onMarkAllRead = vi.fn().mockResolvedValue(undefined);
+  it('does not show the unread dot when all incidents are read', () => {
     render(
-      <IncidentBell incidents={incidents} onMarkRead={vi.fn()} onMarkAllRead={onMarkAllRead} />,
+      <IncidentBell
+        incidents={incidents.map((incident) => ({ ...incident, is_read: true }))}
+        onOpenIncidents={vi.fn()}
+      />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }));
-    await waitFor(() => expect(onMarkAllRead).toHaveBeenCalled());
-    fireEvent.mouseDown(document.body);
-    expect(screen.queryByRole('dialog', { name: 'Incidents' })).not.toBeInTheDocument();
-  });
-
-  it('renders an empty state', () => {
-    render(<IncidentBell incidents={[]} onMarkRead={vi.fn()} onMarkAllRead={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
-    expect(screen.getByText('No incidents yet.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Mark all as read' })).toBeDisabled();
+    expect(screen.queryByLabelText(/unread incidents/)).not.toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { TargetCard } from './components/TargetCard';
 import { TargetFormModal, type TargetFormValues } from './components/TargetFormModal';
 import type { Incident } from './components/IncidentBell';
+import { IncidentsPage } from './components/IncidentsPage';
 
 type Check = {
   id: number;
@@ -27,6 +28,9 @@ type TargetWithChecks = {
 };
 
 function App() {
+  const [page, setPage] = useState<'targets' | 'incidents'>(() =>
+    window.location.pathname === '/incidents' ? 'incidents' : 'targets',
+  );
   const [targets, setTargets] = useState<TargetWithChecks[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
@@ -56,6 +60,14 @@ function App() {
       events?.close();
       clearInterval(interval);
     };
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPage(window.location.pathname === '/incidents' ? 'incidents' : 'targets');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
@@ -97,6 +109,16 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('uptimeApiToken');
     setIsLoggedIn(false);
+  };
+
+  const openIncidents = () => {
+    window.history.pushState({}, '', '/incidents');
+    setPage('incidents');
+  };
+
+  const showTargets = () => {
+    window.history.pushState({}, '', '/');
+    setPage('targets');
   };
 
   const markIncidentRead = async (id: number) => {
@@ -196,37 +218,45 @@ function App() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         incidents={incidents}
-        onMarkIncidentRead={markIncidentRead}
-        onMarkAllIncidentsRead={markAllIncidentsRead}
+        onOpenIncidents={openIncidents}
       />
-      <div className="app-body">
-        <Sidebar targets={targets} selectedId={selectedId} onSelect={handleSelect} />
-        <main className="app-main">
-          {targets.length === 0 ? (
-            <p>No targets configured.</p>
-          ) : (
-            targets.map((t) => (
-              <TargetCard
-                key={t.id}
-                target={t}
-                isHighlighted={highlightedId === t.id}
-                canEdit={isLoggedIn}
-                onUpdate={handleUpdateTarget}
-                onDelete={handleDeleteTarget}
-              />
-            ))
-          )}
-          {isLoggedIn && (
-            <button
-              className="add-target-card"
-              onClick={() => setShowAdd(true)}
-              aria-label="Add new target"
-            >
-              +
-            </button>
-          )}
-        </main>
-      </div>
+      {page === 'incidents' ? (
+        <IncidentsPage
+          incidents={incidents}
+          onBack={showTargets}
+          onMarkRead={markIncidentRead}
+          onMarkAllRead={markAllIncidentsRead}
+        />
+      ) : (
+        <div className="app-body">
+          <Sidebar targets={targets} selectedId={selectedId} onSelect={handleSelect} />
+          <main className="app-main">
+            {targets.length === 0 ? (
+              <p>No targets configured.</p>
+            ) : (
+              targets.map((t) => (
+                <TargetCard
+                  key={t.id}
+                  target={t}
+                  isHighlighted={highlightedId === t.id}
+                  canEdit={isLoggedIn}
+                  onUpdate={handleUpdateTarget}
+                  onDelete={handleDeleteTarget}
+                />
+              ))
+            )}
+            {isLoggedIn && (
+              <button
+                className="add-target-card"
+                onClick={() => setShowAdd(true)}
+                aria-label="Add new target"
+              >
+                +
+              </button>
+            )}
+          </main>
+        </div>
+      )}
       {showAdd && (
         <TargetFormModal
           title="Add Target"

@@ -6,15 +6,13 @@ export function Header({
   onLogin,
   onLogout,
   incidents = [],
-  onMarkIncidentRead = async () => {},
-  onMarkAllIncidentsRead = async () => {},
+  onOpenIncidents = () => {},
 }: {
   isLoggedIn: boolean;
   onLogin: (token: string) => Promise<boolean>;
   onLogout: () => void;
   incidents?: Incident[];
-  onMarkIncidentRead?: (id: number) => Promise<void>;
-  onMarkAllIncidentsRead?: () => Promise<void>;
+  onOpenIncidents?: () => void;
 }) {
   const [showLogin, setShowLogin] = useState(false);
   const [token, setToken] = useState('');
@@ -59,11 +57,7 @@ export function Header({
         </button>
         {isLoggedIn ? (
           <>
-            <IncidentBell
-              incidents={incidents}
-              onMarkRead={onMarkIncidentRead}
-              onMarkAllRead={onMarkAllIncidentsRead}
-            />
+            <IncidentBell incidents={incidents} onOpenIncidents={onOpenIncidents} />
             <button className="header-btn" onClick={onLogout}>
               Logout
             </button>
