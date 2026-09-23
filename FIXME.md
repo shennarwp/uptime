@@ -7,7 +7,6 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 ## Backend / API
 
 ### High Priority
-- [ ] **Incidents API and persistence** - `Incident` model and repository methods exist in `internal/database/`, but there are no REST endpoints, frontend view, or polling-service calls to create and close incidents. Add downtime recording plus `GET /api/targets/{id}/incidents` and `GET /api/incidents`.
 - [ ] **Pagination & Filtering** - `GET /api/targets` returns all targets (up to 1500 checks each). Add `?limit=&offset=` and `?status=up|down` query params.
 - [ ] **Structured Logging** - Replace `log.Printf` with JSON logger (zerolog/zap) in `internal/service/polling.go` and handlers for observability.
 
@@ -26,7 +25,6 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 ## Frontend
 
 ### High Priority
-- [ ] **Incident History View** - New page/modal showing downtime incidents (requires Incidents API).
 
 ### Medium Priority
 
@@ -47,7 +45,6 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 
 ### Low Priority
 - [ ] **Helm Chart** - Package for Kubernetes deployment.
-- [x] **docker-compose.yml** - A compose file exists for the image-based deployment, using the external `nginx` network. A self-contained local-development stack remains optional.
 
 ---
 
@@ -63,12 +60,7 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 
 ## Documentation
 
-- [x] **API Docs** - Swagger UI is registered unconditionally at `/swagger/` by the Go server and is included in the production image. Keep the generated spec synchronized after API changes.
 - [ ] **Architecture Decision Records (ADRs)** - Document key decisions (SQLite, cron scheduling, etc.).
 - [ ] **Contributing Guide** - Add `CONTRIBUTING.md` with setup, test, and PR process.
 
 ---
-
-## Legend
-- ✅ = Done (in this PR)
-- [ ] = Pending
