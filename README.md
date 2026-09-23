@@ -107,7 +107,9 @@ The web UI has a **Login** button in the header. Entering a token calls `POST /a
 
 ### Incidents API
 
-`GET /api/v1/incidents` returns incidents newest first. Each incident includes its type, affected target name and URL, timestamp, and `is_read` state. Incident types are `going_down`, `going_up`, `cert_30_days`, `cert_10_days`, and `cert_expired`.
+`GET /api/v1/incidents` returns incidents newest first. Each incident includes its type, affected target name and URL, timestamp, and `is_read` state. Incident types are `going_down`, `going_up`, `cert_30_days`, `cert_10_days`, `cert_expired`, `dns_error`, `timeout_error`, `connection_refused`, `tls_error`, and `network_error`.
+
+Health checks distinguish common transport failures: DNS lookup failures, timeouts, refused connections, TLS or certificate failures, and other network errors. HTTP 4xx and 5xx responses remain status incidents because the endpoint responded successfully at the transport layer.
 
 Use `PATCH /api/v1/incident/{id}/read` to acknowledge one incident or `POST /api/v1/incidents/read` to acknowledge all incidents. Both operations require the bearer token.
 

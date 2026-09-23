@@ -1,4 +1,6 @@
 coverage:
+  ignore:
+    - cmd/uptime/main.go
   status:
     project:
       default:

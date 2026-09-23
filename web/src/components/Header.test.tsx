@@ -15,6 +15,31 @@ describe('Header component', () => {
     expect(onLogout).toHaveBeenCalled();
   });
 
+  it('shows the incident bell beside logout when logged in', () => {
+    render(
+      <Header
+        isLoggedIn
+        onLogin={vi.fn()}
+        onLogout={vi.fn()}
+        incidents={[
+          {
+            id: 1,
+            type: 'going_down',
+            target_name: 'Example',
+            target_url: 'https://example.com',
+            timestamp: '2026-09-22T12:00:00Z',
+            started_at: '2026-09-22T12:00:00Z',
+            is_read: false,
+          },
+        ]}
+        onMarkIncidentRead={vi.fn().mockResolvedValue(undefined)}
+        onMarkAllIncidentsRead={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
+    expect(screen.getByText('Target went down')).toBeInTheDocument();
+  });
+
   it('toggles and persists dark mode', () => {
     render(<Header isLoggedIn={false} onLogin={vi.fn()} onLogout={vi.fn()} />);
     const toggle = screen.getByRole('button', { name: 'Switch to dark mode' });

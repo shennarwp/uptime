@@ -57,4 +57,67 @@ describe('App add-target tile', () => {
     unmount();
     expect(eventSources[0].close).toHaveBeenCalled();
   });
+
+  it('loads incidents and marks them all as read from the header', async () => {
+    localStorage.setItem('uptimeApiToken', 'tok');
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.includes('/incidents')
+            ? [
+                {
+                  id: 1,
+                  type: 'going_down',
+                  target_name: 'Example',
+                  target_url: 'https://example.com',
+                  timestamp: '2026-09-22T12:00:00Z',
+                  started_at: '2026-09-22T12:00:00Z',
+                  is_read: false,
+                },
+              ]
+            : [],
+      }),
+    );
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Incidents' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }));
+    await screen.findByRole('button', { name: 'Mark all as read' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/incidents/read',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('marks one incident as read from the header', async () => {
+    localStorage.setItem('uptimeApiToken', 'tok');
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.includes('/incidents')
+            ? [
+                {
+                  id: 1,
+                  type: 'going_down',
+                  target_name: 'Example',
+                  target_url: 'https://example.com',
+                  timestamp: '2026-09-22T12:00:00Z',
+                  started_at: '2026-09-22T12:00:00Z',
+                  is_read: false,
+                },
+              ]
+            : [],
+      }),
+    );
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Incidents' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Target went down as read' }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/incident/1/read',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
 });

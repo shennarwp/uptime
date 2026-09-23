@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"io"
 	"log"
 	"math/big"
@@ -20,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 	"uptime/internal/database"
@@ -84,6 +86,61 @@ func TestPollingService_PingAndPoll(t *testing.T) {
 	go pollingSvc.Start(ctx)
 	<-ctx.Done()
 }
+
+func TestPollingService_RecordsStatusTransitionIncidents(t *testing.T) {
+	status := atomic.Int32{}
+	status.Store(http.StatusOK)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(int(status.Load()))
+	}))
+	defer ts.Close()
+	repo, cleanup := databaseTestRepo(t)
+	defer cleanup()
+	target := &database.Target{Name: "Transition target", URL: ts.URL, Schedule: "@every 1m"}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatal(err)
+	}
+	svc := NewPollingService(repo, "")
+	svc.pingTarget(*target)
+	status.Store(http.StatusServiceUnavailable)
+	svc.pingTarget(*target)
+	status.Store(http.StatusOK)
+	svc.pingTarget(*target)
+
+	incidents, err := repo.GetIncidents()
+	if err != nil || len(incidents) != 2 {
+		t.Fatalf("expected down and up incidents, got %d: %v", len(incidents), err)
+	}
+	if incidents[0].Type != database.IncidentTypeGoingUp || incidents[1].Type != database.IncidentTypeGoingDown {
+		t.Fatalf("unexpected transition incidents: %+v", incidents)
+	}
+}
+
+func TestClassifyCheckError(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{name: "dns", err: &net.DNSError{Err: "no such host", Name: "missing.example"}, want: database.IncidentTypeDNSError},
+		{name: "timeout", err: timeoutError{}, want: database.IncidentTypeTimeout},
+		{name: "refused", err: syscall.ECONNREFUSED, want: database.IncidentTypeRefused},
+		{name: "tls", err: errors.New("tls: handshake failure"), want: database.IncidentTypeTLSError},
+		{name: "network", err: errors.New("network is unreachable"), want: database.IncidentTypeNetworkError},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := classifyCheckError(test.err); got != test.want {
+				t.Fatalf("classifyCheckError() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+type timeoutError struct{}
+
+func (timeoutError) Error() string   { return "request timed out" }
+func (timeoutError) Timeout() bool   { return true }
+func (timeoutError) Temporary() bool { return true }
 
 func TestPollingService_Resync(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "uptime_poll_resync_*")
