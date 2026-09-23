@@ -32,12 +32,10 @@ describe('Header component', () => {
             is_read: false,
           },
         ]}
-        onMarkIncidentRead={vi.fn().mockResolvedValue(undefined)}
-        onMarkAllIncidentsRead={vi.fn().mockResolvedValue(undefined)}
+        onOpenIncidents={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
-    expect(screen.getByText('Target went down')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'View incidents' })).toBeInTheDocument();
   });
 
   it('toggles and persists dark mode', () => {

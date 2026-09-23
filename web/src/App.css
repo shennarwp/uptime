@@ -208,36 +208,20 @@ input:focus-visible {
   background: #dc2626;
 }
 
-.incident-panel {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 10px);
-  right: 0;
-  width: min(420px, calc(100vw - 24px));
-  max-height: min(620px, calc(100vh - 90px));
-  overflow: auto;
-  padding: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--text-color);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
-}
-
-.incident-panel-header {
+.incidents-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
 }
 
-.incident-panel-header h2 {
+.incidents-page-header h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
 }
 
+.incidents-back-button,
 .incident-mark-all,
 .incident-read-button {
   border: 1px solid var(--border-color);
@@ -246,6 +230,19 @@ input:focus-visible {
   color: var(--text-color);
   cursor: pointer;
   font-family: inherit;
+}
+
+.incidents-back-button {
+  display: block;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  color: var(--subtext-color);
+  font-size: 13px;
+}
+
+.incidents-back-button:hover {
+  color: var(--text-color);
 }
 
 .incident-mark-all {
@@ -259,11 +256,12 @@ input:focus-visible {
   opacity: 0.5;
 }
 
-.incident-list {
+.incident-page-list {
   display: grid;
+  gap: 12px;
 }
 
-.incident-item {
+.incident-page-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -272,7 +270,7 @@ input:focus-visible {
   border-bottom: 1px solid var(--border-color);
 }
 
-.incident-item:last-child {
+.incident-page-item:last-child {
   border-bottom: 0;
 }
 
@@ -295,7 +293,7 @@ input:focus-visible {
   white-space: nowrap;
 }
 
-.incident-item.unread {
+.incident-page-item.unread {
   border-left: 3px solid #dc2626;
   padding-left: 9px;
 }
@@ -311,6 +309,11 @@ input:focus-visible {
   margin: 20px 0 4px;
   color: var(--subtext-color);
   text-align: center;
+}
+
+.incidents-page {
+  width: 100%;
+  padding: 24px;
 }
 
 .app-body {
@@ -778,13 +781,17 @@ input:focus-visible {
     max-width: 320px;
   }
 
-  .incident-panel {
-    position: fixed;
-    inset: 0;
+  .incidents-page {
     width: 100%;
-    max-height: none;
-    border: 0;
-    border-radius: 0;
-    padding: 20px 16px;
+    padding: 16px 12px;
+  }
+
+  .incidents-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .incidents-page-header .incident-mark-all {
+    width: 100%;
   }
 }

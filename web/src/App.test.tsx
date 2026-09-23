@@ -25,6 +25,7 @@ afterEach(() => {
   fetchMock.mockClear();
   eventSources.length = 0;
   localStorage.clear();
+  window.history.pushState({}, '', '/');
 });
 
 describe('App add-target tile', () => {
@@ -81,7 +82,8 @@ describe('App add-target tile', () => {
     );
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Incidents' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'View incidents' }));
+    expect(await screen.findByRole('heading', { name: 'Incidents' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }));
     await screen.findByRole('button', { name: 'Mark all as read' });
     expect(fetchMock).toHaveBeenCalledWith(
@@ -113,7 +115,8 @@ describe('App add-target tile', () => {
     );
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Incidents' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'View incidents' }));
+    expect(await screen.findByRole('heading', { name: 'Incidents' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Mark Target went down as read' }));
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/incident/1/read',
