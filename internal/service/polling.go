@@ -496,6 +496,22 @@ func classifyCheckError(err error) string {
 	return database.IncidentTypeNetworkError
 }
 
+func classifyCheckErrorMessage(message string) string {
+	lower := strings.ToLower(message)
+	switch {
+	case strings.Contains(lower, "no such host"), strings.Contains(lower, "lookup"):
+		return database.IncidentTypeDNSError
+	case strings.Contains(lower, "timeout"), strings.Contains(lower, "deadline exceeded"):
+		return database.IncidentTypeTimeout
+	case strings.Contains(lower, "connection refused"):
+		return database.IncidentTypeRefused
+	case strings.Contains(lower, "tls"), strings.Contains(lower, "certificate"):
+		return database.IncidentTypeTLSError
+	default:
+		return database.IncidentTypeNetworkError
+	}
+}
+
 // postNotification posts a plain-text message to the configured ntfy URL. The
 // caller decides whether the notification is warranted and logs any failure.
 func (s *PollingService) postNotification(title, message string) error {
@@ -603,19 +619,35 @@ func (s *PollingService) pingTarget(t database.Target) {
 }
 
 func (s *PollingService) recordStatusIncident(t database.Target, previous, current *database.Check, failureType string) {
-	if previous == nil || previous.IsUp == current.IsUp {
+	if current.IsUp {
+		if previous == nil || previous.IsUp {
+			return
+		}
+		incidentType := database.IncidentTypeGoingUp
+		cause := "Target went up after being down"
+		s.createStatusIncident(t, current, incidentType, cause)
 		return
 	}
-	incidentType := database.IncidentTypeGoingDown
-	cause := "Target went down after being up"
-	if failureType != "" {
-		incidentType = failureType
-		cause = fmt.Sprintf("Target check failed: %s", failureType)
+
+	if failureType == "" {
+		if previous == nil || !previous.IsUp {
+			return
+		}
+		s.createStatusIncident(t, current, database.IncidentTypeGoingDown, "Target went down after being up")
+		return
 	}
-	if current.IsUp {
-		incidentType = database.IncidentTypeGoingUp
-		cause = "Target went up after being down"
+
+	if previous != nil && !previous.IsUp && previous.ErrorMessage != nil {
+		if classifyCheckErrorMessage(*previous.ErrorMessage) == failureType {
+			return
+		}
 	}
+
+	cause := fmt.Sprintf("Target check failed: %s", failureType)
+	s.createStatusIncident(t, current, failureType, cause)
+}
+
+func (s *PollingService) createStatusIncident(t database.Target, current *database.Check, incidentType, cause string) {
 	incident := &database.Incident{
 		TargetID:  t.ID,
 		StartedAt: current.CheckedAt,

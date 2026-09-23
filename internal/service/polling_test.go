@@ -116,6 +116,41 @@ func TestPollingService_RecordsStatusTransitionIncidents(t *testing.T) {
 	}
 }
 
+func TestPollingService_RecordsFirstTransportFailureIncident(t *testing.T) {
+	repo, cleanup := databaseTestRepo(t)
+	defer cleanup()
+	target := &database.Target{Name: "DNS target", URL: "https://rwporo.com", Schedule: "@every 1m"}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatal(err)
+	}
+	svc := NewPollingService(repo, "")
+	svc.client = &http.Client{Transport: &sequenceTransport{
+		errors: []error{
+			&net.DNSError{Err: "no such host", Name: "rwporo.com", Server: "10.255.255.254:53"},
+			&net.DNSError{Err: "no such host", Name: "rwporo.com", Server: "10.255.255.254:53"},
+			syscall.ECONNREFUSED,
+		},
+	}}
+
+	svc.pingTarget(*target)
+	svc.pingTarget(*target)
+	svc.pingTarget(*target)
+
+	incidents, err := repo.GetIncidents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(incidents) != 2 {
+		t.Fatalf("expected first DNS failure and changed failure type incidents, got %d: %+v", len(incidents), incidents)
+	}
+	if incidents[1].Type != database.IncidentTypeDNSError {
+		t.Fatalf("first incident type = %q, want %q", incidents[1].Type, database.IncidentTypeDNSError)
+	}
+	if incidents[0].Type != database.IncidentTypeRefused {
+		t.Fatalf("changed incident type = %q, want %q", incidents[0].Type, database.IncidentTypeRefused)
+	}
+}
+
 func TestClassifyCheckError(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -134,6 +169,24 @@ func TestClassifyCheckError(t *testing.T) {
 			}
 		})
 	}
+}
+
+type sequenceTransport struct {
+	errors []error
+	index  int
+}
+
+func (t *sequenceTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	if t.index >= len(t.errors) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("OK")),
+			Header:     make(http.Header),
+		}, nil
+	}
+	err := t.errors[t.index]
+	t.index++
+	return nil, err
 }
 
 type timeoutError struct{}
