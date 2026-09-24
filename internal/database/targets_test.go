@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
@@ -253,5 +254,66 @@ func TestTargetRepository_CRUDAndChecksAndIncidents(t *testing.T) {
 	}
 	if len(targetsAfterDelete) != initialCount {
 		t.Errorf("expected %d targets after deletion, got %d", initialCount, len(targetsAfterDelete))
+	}
+}
+
+func TestTargetRepository_GetLatestIncidentPrefersUnreadThenNewest(t *testing.T) {
+	repo, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	target := &Target{Name: "Latest target", URL: "https://latest.example", Schedule: "@every 1m"}
+	if err := repo.CreateTarget(target); err != nil {
+		t.Fatal(err)
+	}
+	otherTarget := &Target{Name: "Other target", URL: "https://other.example", Schedule: "@every 1m"}
+	if err := repo.CreateTarget(otherTarget); err != nil {
+		t.Fatal(err)
+	}
+
+	create := func(startedAt time.Time, incidentType string, isRead bool, targetID int) *Incident {
+		t.Helper()
+		incident := &Incident{
+			TargetID:  targetID,
+			StartedAt: Timestamp{Time: startedAt},
+			Type:      incidentType,
+			IsRead:    isRead,
+		}
+		if err := repo.CreateIncident(incident); err != nil {
+			t.Fatal(err)
+		}
+		return incident
+	}
+
+	create(time.Date(2026, 9, 24, 10, 0, 0, 0, time.UTC), IncidentTypeDNSError, true, target.ID)
+	newestRead := create(time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC), IncidentTypeDNSError, true, target.ID)
+	olderUnread := create(time.Date(2026, 9, 24, 11, 0, 0, 0, time.UTC), IncidentTypeDNSError, false, target.ID)
+	newestUnread := create(time.Date(2026, 9, 24, 11, 30, 0, 0, time.UTC), IncidentTypeDNSError, false, target.ID)
+	create(time.Date(2026, 9, 24, 13, 0, 0, 0, time.UTC), IncidentTypeGoingDown, false, target.ID)
+	create(time.Date(2026, 9, 24, 14, 0, 0, 0, time.UTC), IncidentTypeDNSError, false, otherTarget.ID)
+
+	got, err := repo.GetLatestIncident(target.ID, IncidentTypeDNSError)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != newestUnread.ID || got.TargetID != target.ID || got.Type != IncidentTypeDNSError || got.TargetURL != target.URL || got.IsRead {
+		t.Fatalf("expected newest unread incident, got %+v", got)
+	}
+
+	if err := repo.MarkIncidentRead(olderUnread.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.MarkIncidentRead(newestUnread.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, err = repo.GetLatestIncident(target.ID, IncidentTypeDNSError)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != newestRead.ID || !got.IsRead {
+		t.Fatalf("expected newest read fallback incident, got %+v", got)
+	}
+
+	if _, err := repo.GetLatestIncident(target.ID, IncidentTypeCertExpired); err != sql.ErrNoRows {
+		t.Fatalf("expected sql.ErrNoRows for missing incident, got %v", err)
 	}
 }

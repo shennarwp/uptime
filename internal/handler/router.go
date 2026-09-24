@@ -21,6 +21,7 @@ func NewRouter(targets *TargetHandler, events *service.EventBroker, incidentHand
 		mux.HandleFunc("DELETE "+prefix+"/target/{id}", RequireAPIToken(targets.DeleteTarget))
 		if incidents != nil {
 			mux.HandleFunc("GET "+prefix+"/incidents", incidents.GetIncidents)
+			mux.HandleFunc("GET "+prefix+"/incidents/latest", RequireAPIToken(incidents.GetLatestIncident))
 			mux.HandleFunc("PATCH "+prefix+"/incident/{id}/read", RequireAPIToken(incidents.MarkIncidentRead))
 			mux.HandleFunc("POST "+prefix+"/incidents/read", RequireAPIToken(incidents.MarkAllIncidentsRead))
 		}

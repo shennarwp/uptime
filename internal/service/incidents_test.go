@@ -37,6 +37,10 @@ func TestIncidentService_ReadOperations(t *testing.T) {
 	if err != nil || len(incidents) != 1 {
 		t.Fatalf("GetIncidents returned %d incidents, err=%v", len(incidents), err)
 	}
+	latest, err := svc.GetLatestIncident(target.ID, database.IncidentTypeGoingDown)
+	if err != nil || latest.ID != incident.ID {
+		t.Fatalf("GetLatestIncident returned %+v, err=%v", latest, err)
+	}
 	if err := svc.MarkRead(incident.ID); err != nil {
 		t.Fatal(err)
 	}

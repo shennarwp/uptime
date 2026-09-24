@@ -106,6 +106,24 @@ const (
 	IncidentTypeNetworkError = "network_error"
 )
 
+func IsValidIncidentType(value string) bool {
+	switch value {
+	case IncidentTypeGoingDown,
+		IncidentTypeGoingUp,
+		IncidentTypeCert30Days,
+		IncidentTypeCert10Days,
+		IncidentTypeCertExpired,
+		IncidentTypeDNSError,
+		IncidentTypeTimeout,
+		IncidentTypeRefused,
+		IncidentTypeTLSError,
+		IncidentTypeNetworkError:
+		return true
+	default:
+		return false
+	}
+}
+
 // Incident represents a notable change affecting a monitored target.
 type Incident struct {
 	// ID is the unique identifier of the incident.
