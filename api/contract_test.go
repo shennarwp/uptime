@@ -22,6 +22,7 @@ func TestOpenAPIContractContainsImplementedEndpoints(t *testing.T) {
 		"/api/v1/target/{id}":        {"put", "delete"},
 		"/api/v1/auth/verify":        {"post"},
 		"/api/v1/incidents":          {"get"},
+		"/api/v1/incidents/latest":   {"get"},
 		"/api/v1/incident/{id}/read": {"patch"},
 		"/api/v1/incidents/read":     {"post"},
 	}

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -59,6 +60,57 @@ func TestIncidentHandler_ReadEndpoints(t *testing.T) {
 	handler.MarkAllIncidentsRead(all, httptest.NewRequest(http.MethodPost, "/api/v1/incidents/read", nil))
 	if all.Code != http.StatusNoContent {
 		t.Fatalf("expected mark-all status 204, got %d", all.Code)
+	}
+}
+
+func TestIncidentHandler_GetLatestIncidentValidationAndNotFound(t *testing.T) {
+	_, handler, _ := incidentHandlerFixture(t)
+
+	tests := []struct {
+		name string
+		url  string
+	}{
+		{name: "invalid target id", url: "/api/v1/incidents/latest?target_id=invalid&type=going_down"},
+		{name: "non-positive target id", url: "/api/v1/incidents/latest?target_id=0&type=going_down"},
+		{name: "invalid type", url: "/api/v1/incidents/latest?target_id=1&type=not_an_incident"},
+		{name: "missing type", url: "/api/v1/incidents/latest?target_id=1"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			handler.GetLatestIncident(response, httptest.NewRequest(http.MethodGet, test.url, nil))
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("expected 400, got %d", response.Code)
+			}
+		})
+	}
+
+	response := httptest.NewRecorder()
+	handler.GetLatestIncident(response, httptest.NewRequest(http.MethodGet, "/api/v1/incidents/latest?target_id=999999&type=going_down", nil))
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", response.Code)
+	}
+}
+
+func TestIncidentHandler_GetLatestIncidentReturnsFullObject(t *testing.T) {
+	db, handler, incidentID := incidentHandlerFixture(t)
+	var targetID int
+	if err := db.QueryRow("SELECT target_id FROM incidents WHERE id = ?", incidentID).Scan(&targetID); err != nil {
+		t.Fatal(err)
+	}
+
+	response := httptest.NewRecorder()
+	url := "/api/v1/incidents/latest?target_id=" + strconv.Itoa(targetID) + "&type=" + database.IncidentTypeGoingDown
+	handler.GetLatestIncident(response, httptest.NewRequest(http.MethodGet, url, nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	var incident database.Incident
+	if err := json.NewDecoder(response.Body).Decode(&incident); err != nil {
+		t.Fatal(err)
+	}
+	if incident.ID != incidentID || incident.TargetID != targetID || incident.Type != database.IncidentTypeGoingDown {
+		t.Fatalf("unexpected latest incident: %+v", incident)
 	}
 }
 

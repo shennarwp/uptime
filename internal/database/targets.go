@@ -238,6 +238,17 @@ func (r *TargetRepository) GetIncidents() ([]Incident, error) {
 	return incidents, rows.Err()
 }
 
+func (r *TargetRepository) GetLatestIncident(targetID int, incidentType string) (*Incident, error) {
+	query := "SELECT " + incidentColumns + " FROM incidents i JOIN targets t ON t.id = i.target_id " +
+		"WHERE i.target_id = ? AND i.type = ? " +
+		"ORDER BY i.is_read ASC, i.started_at DESC, i.id DESC LIMIT 1"
+	incident, err := scanIncident(r.db.QueryRow(query, targetID, incidentType))
+	if err != nil {
+		return nil, err
+	}
+	return &incident, nil
+}
+
 func (r *TargetRepository) MarkIncidentRead(id int) error {
 	_, err := r.db.Exec("UPDATE incidents SET is_read = 1 WHERE id = ?", id)
 	return err

@@ -95,7 +95,7 @@ Notes:
 
 ### Protecting mutating endpoints
 
-Mutating endpoints (`POST /api/v1/targets`, `PUT /api/v1/target/{id}`, `DELETE /api/v1/target/{id}`, `PATCH /api/v1/incident/{id}/read`, and `POST /api/v1/incidents/read`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`. The equivalent `/api/...` paths remain available as compatibility aliases.
+Protected endpoints (`GET /api/v1/incidents/latest`, `POST /api/v1/targets`, `PUT /api/v1/target/{id}`, `DELETE /api/v1/target/{id}`, `PATCH /api/v1/incident/{id}/read`, and `POST /api/v1/incidents/read`) are guarded by a bearer token read from the `UPTIME_API_TOKEN` environment variable. Requests must send an `Authorization: Bearer <token>` header; anything else returns `401 Unauthorized`. The equivalent `/api/...` paths remain available as compatibility aliases.
 
 ```bash
 docker run ... -e UPTIME_API_TOKEN=your-secret-token ...
@@ -108,6 +108,8 @@ The web UI has a **Login** button in the header. Entering a token calls `POST /a
 ### Incidents API
 
 `GET /api/v1/incidents` returns incidents newest first. Each incident includes its type, affected target name and URL, timestamp, and `is_read` state. Incident types are `going_down`, `going_up`, `cert_30_days`, `cert_10_days`, `cert_expired`, `dns_error`, `timeout_error`, `connection_refused`, `tls_error`, and `network_error`.
+
+`GET /api/v1/incidents/latest?target_id=<id>&type=<incident_type>` returns one full incident object for the requested target and type. An unread match is preferred; if all matching incidents have been read, the newest matching incident is returned. The endpoint returns `404 Not Found` when no matching incident exists and requires the bearer token.
 
 Health checks classify incidents as follows:
 

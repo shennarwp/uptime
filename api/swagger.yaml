@@ -214,6 +214,43 @@ paths:
       summary: List incidents
       tags:
       - incidents
+  /api/v1/incidents/latest:
+    get:
+      parameters:
+      - description: Target ID
+        in: query
+        name: target_id
+        required: true
+        type: integer
+      - description: Incident type
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Latest matching incident
+          schema:
+            $ref: '#/definitions/database.Incident'
+        "400":
+          description: Invalid target ID or incident type
+          schema:
+            type: string
+        "404":
+          description: Incident not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get latest matching incident
+      tags:
+      - incidents
   /api/v1/incidents/read:
     post:
       responses:

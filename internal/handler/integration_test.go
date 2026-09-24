@@ -120,3 +120,47 @@ func TestIncidentAPIReadState(t *testing.T) {
 		t.Fatalf("expected incident to be marked read")
 	}
 }
+
+func TestLatestIncidentAPIRequiresAuthAndReturnsIncidentID(t *testing.T) {
+	db, router := integrationRouter(t)
+	result, err := db.Exec("INSERT INTO targets (name, url, schedule) VALUES ('latest target', 'https://latest.example', '@every 1m')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	targetID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err = db.Exec(
+		"INSERT INTO incidents (target_id, started_at, cause, type, is_read) VALUES (?, datetime('now'), 'latest incident', 'dns_error', 0)",
+		targetID,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	incidentID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	unauthorized := httptest.NewRecorder()
+	router.ServeHTTP(unauthorized, httptest.NewRequest(http.MethodGet, "/api/v1/incidents/latest?target_id="+strconv.FormatInt(targetID, 10)+"&type=dns_error", nil))
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without bearer token, got %d", unauthorized.Code)
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/incidents/latest?target_id="+strconv.FormatInt(targetID, 10)+"&type=dns_error", nil)
+	request.Header.Set("Authorization", "Bearer integration-token")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	var incident database.Incident
+	if err := json.NewDecoder(response.Body).Decode(&incident); err != nil {
+		t.Fatal(err)
+	}
+	if int64(incident.ID) != incidentID {
+		t.Fatalf("expected incident id %d, got %d", incidentID, incident.ID)
+	}
+}
