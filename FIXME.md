@@ -15,6 +15,8 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 - [ ] **Rate Limiting** - Add middleware for auth/abuse protection on mutating endpoints.
 - [ ] **Config File Support** - Move from env-only to config file (YAML/TOML) for complex deployments.
 - [ ] **Request Validation Middleware** - Move request validation from handler methods into reusable middleware or request-schema validation. The underlying field validators are already shared in `internal/handler/validation.go`.
+- [ ] **Custom ntfy Configuration** - Support configurable ntfy settings, including custom topics or notification destinations, through the backend API.
+- [ ] **Manual Target Checks** - Add an authenticated backend endpoint to trigger an immediate check for a specific target.
 
 ### Low Priority
 - [ ] **Metrics Endpoint** - Add `/metrics` for Prometheus scraping (request latency, check counts, etc.).
@@ -31,6 +33,8 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 ### Low Priority
 - [ ] **Bulk Operations** - Multi-select for bulk delete/enable/disable.
 - [ ] **Export/Import** - JSON/YAML export of targets for backup/migration.
+- [ ] **Manual Check Action** - Add a web UI action to trigger an immediate check for an individual target.
+- [ ] **Schedule Presets** - Offer friendly schedule presets in the web UI instead of requiring users to enter raw cron expressions.
 
 ---
 
