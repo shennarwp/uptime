@@ -339,7 +339,14 @@ paths:
   /api/v1/targets:
     get:
       description: Returns all monitored targets along with their most recent health
-        checks (up to 1500 per target).
+        checks. The checks_limit query parameter controls the number of checks returned
+        per target, up to 500.
+      parameters:
+      - description: Number of recent checks returned per target (default 300, maximum
+          500)
+        in: query
+        name: checks_limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -349,6 +356,10 @@ paths:
             items:
               $ref: '#/definitions/database.TargetWithChecks'
             type: array
+        "400":
+          description: Invalid checks_limit
+          schema:
+            type: string
         "500":
           description: Internal server error
           schema:

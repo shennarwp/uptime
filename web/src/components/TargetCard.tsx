@@ -47,12 +47,14 @@ export function TargetCard({
   canEdit,
   onUpdate,
   onDelete,
+  onHistoryWidthChange,
 }: {
   target: TargetWithChecks;
   isHighlighted: boolean;
   canEdit: boolean;
   onUpdate: (id: number, name: string, schedule: string) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onHistoryWidthChange?: (width: number) => void;
 }) {
   const lastCheck = target.checks && target.checks.length > 0 ? target.checks[0] : null;
   const isUp = lastCheck ? lastCheck.is_up : false;
@@ -141,7 +143,7 @@ export function TargetCard({
         )}
       </div>
 
-      <CheckHistoryBar checks={target.checks} />
+      <CheckHistoryBar checks={target.checks} onWidthChange={onHistoryWidthChange} />
 
       {showEdit && (
         <TargetFormModal

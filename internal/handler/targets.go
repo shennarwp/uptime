@@ -14,6 +14,11 @@ type TargetHandler struct {
 	svc *service.TargetService
 }
 
+const (
+	defaultChecksLimit = 300
+	maxChecksLimit     = 500
+)
+
 // UpdateTargetRequest is the JSON body for updating a target. Only the name and
 // schedule are editable.
 type UpdateTargetRequest struct {
@@ -34,14 +39,22 @@ func NewTargetHandler(svc *service.TargetService) *TargetHandler {
 
 // GetTargets returns all targets together with their recent health checks.
 // @Summary List targets with recent checks
-// @Description Returns all monitored targets along with their most recent health checks (up to 1500 per target).
+// @Description Returns all monitored targets along with their most recent health checks. The checks_limit query parameter controls the number of checks returned per target, up to 500.
 // @Tags targets
 // @Produce json
+// @Param checks_limit query int false "Number of recent checks returned per target (default 300, maximum 500)"
 // @Success 200 {array} database.TargetWithChecks "List of targets with recent checks"
+// @Failure 400 {string} string "Invalid checks_limit"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/v1/targets [get]
 func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
-	targets, err := h.svc.GetTargetsWithRecentChecksContext(r.Context(), 1500)
+	checksLimit, err := parseChecksLimit(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	targets, err := h.svc.GetTargetsWithRecentChecksContext(r.Context(), checksLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,6 +64,19 @@ func (h *TargetHandler) GetTargets(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+}
+
+func parseChecksLimit(r *http.Request) (int, error) {
+	value := r.URL.Query().Get("checks_limit")
+	if value == "" {
+		return defaultChecksLimit, nil
+	}
+
+	limit, err := strconv.Atoi(value)
+	if err != nil || limit < 1 || limit > maxChecksLimit {
+		return 0, errors.New("checks_limit must be an integer between 1 and 500")
+	}
+	return limit, nil
 }
 
 // CreateTarget creates a new target.

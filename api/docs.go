@@ -318,7 +318,7 @@ const docTemplate = `{
         },
         "/api/v1/targets": {
             "get": {
-                "description": "Returns all monitored targets along with their most recent health checks (up to 1500 per target).",
+                "description": "Returns all monitored targets along with their most recent health checks. The checks_limit query parameter controls the number of checks returned per target, up to 500.",
                 "produces": [
                     "application/json"
                 ],
@@ -326,6 +326,14 @@ const docTemplate = `{
                     "targets"
                 ],
                 "summary": "List targets with recent checks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of recent checks returned per target (default 300, maximum 500)",
+                        "name": "checks_limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of targets with recent checks",
@@ -334,6 +342,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/database.TargetWithChecks"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid checks_limit",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {

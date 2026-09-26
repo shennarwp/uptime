@@ -11,7 +11,13 @@ type Check = {
   checked_at: string;
 };
 
-export function CheckHistoryBar({ checks }: { checks: Check[] }) {
+export function CheckHistoryBar({
+  checks,
+  onWidthChange,
+}: {
+  checks: Check[];
+  onWidthChange?: (width: number) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [maxBoxes, setMaxBoxes] = useState(30);
 
@@ -22,11 +28,12 @@ export function CheckHistoryBar({ checks }: { checks: Check[] }) {
         const width = entry.contentRect.width;
         const count = Math.max(1, Math.floor(width / 8));
         setMaxBoxes(count);
+        onWidthChange?.(width);
       }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [onWidthChange]);
 
   const safeChecks = Array.isArray(checks) ? checks : [];
   const relevantChecks = [...safeChecks].slice(0, maxBoxes);

@@ -60,6 +60,49 @@ describe('App add-target tile', () => {
     expect((await screen.findAllByText('Example target')).length).toBe(2);
   });
 
+  it('requests buffered history for the measured history width', async () => {
+    const target = {
+      id: 1,
+      name: 'Example target',
+      url: 'https://example.com',
+      schedule: '@every 1m',
+      checks: [],
+    };
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () => (url.includes('/targets') ? [target] : []),
+      }),
+    );
+    const previousResizeObserver = globalThis.ResizeObserver;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private readonly callback: ResizeObserverCallback) {}
+
+        observe() {
+          this.callback(
+            [{ contentRect: { width: 864 } } as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          );
+        }
+
+        disconnect() {}
+
+        unobserve() {}
+      },
+    );
+
+    try {
+      render(<App />);
+
+      expect(await screen.findAllByText('Example target')).toHaveLength(2);
+      expect(fetchMock).toHaveBeenCalledWith('/api/v1/targets?checks_limit=135');
+    } finally {
+      vi.stubGlobal('ResizeObserver', previousResizeObserver);
+    }
+  });
+
   it('shows the add tile when logged in and opens the add modal', async () => {
     localStorage.setItem('uptimeApiToken', 'tok');
     render(<App />);
