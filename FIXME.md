@@ -7,7 +7,6 @@ This document tracks recommended improvements for the Uptime Monitor project. It
 ## Backend / API
 
 ### High Priority
-- [ ] **Pagination & Filtering** - `GET /api/targets` returns all targets. Add `?limit=&offset=` and `?status=up|down` query params; per-target check history can be limited with `?checks_limit=`.
 - [ ] **Structured Logging** - Replace `log.Printf` with JSON logger (zerolog/zap) in `internal/service/polling.go` and handlers for observability.
 
 ### Medium Priority
