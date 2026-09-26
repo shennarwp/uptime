@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { CheckHistoryBar } from './CheckHistoryBar';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('CheckHistoryBar component', () => {
   it('renders history bar with checks', () => {
@@ -27,5 +27,35 @@ describe('CheckHistoryBar component', () => {
     render(<CheckHistoryBar checks={checks} />);
 
     expect(screen.getByText('Recent Checks History (Oldest → Newest):')).toBeInTheDocument();
+  });
+
+  it('reports the rendered history width', () => {
+    const onWidthChange = vi.fn();
+    const previousResizeObserver = globalThis.ResizeObserver;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private readonly callback: ResizeObserverCallback) {}
+
+        observe() {
+          this.callback(
+            [{ contentRect: { width: 864 } } as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          );
+        }
+
+        disconnect() {}
+
+        unobserve() {}
+      },
+    );
+
+    try {
+      render(<CheckHistoryBar checks={[]} onWidthChange={onWidthChange} />);
+
+      expect(onWidthChange).toHaveBeenCalledWith(864);
+    } finally {
+      vi.stubGlobal('ResizeObserver', previousResizeObserver);
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -27,11 +27,27 @@ type TargetWithChecks = {
   checks: Check[];
 };
 
+const DEFAULT_CHECKS_LIMIT = 300;
+const MAX_CHECKS_LIMIT = 500;
+const CHECK_WIDTH_PX = 8;
+const CHECKS_BUFFER = 1.25;
+const RESIZE_FETCH_THRESHOLD = 16;
+
+async function fetchTargets(checksLimit: number): Promise<TargetWithChecks[]> {
+  const query = checksLimit === DEFAULT_CHECKS_LIMIT ? '' : `?checks_limit=${checksLimit}`;
+  const response = await fetch(`/api/v1/targets${query}`);
+  if (!response.ok) {
+    throw new Error(`Failed to load targets (${response.status})`);
+  }
+  return response.json();
+}
+
 function App() {
   const [page, setPage] = useState<'targets' | 'incidents'>(() =>
     window.location.pathname === '/incidents' ? 'incidents' : 'targets',
   );
   const [targets, setTargets] = useState<TargetWithChecks[]>([]);
+  const checksLimitRef = useRef(DEFAULT_CHECKS_LIMIT);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -42,12 +58,10 @@ function App() {
 
   useEffect(() => {
     const loadTargets = () => {
-      fetch('/api/v1/targets')
-        .then((res) => res.json())
-        .then((data) => {
-          setTargets(data);
-          setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
-        });
+      fetchTargets(checksLimitRef.current).then((data) => {
+        setTargets(data);
+        setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
+      });
     };
 
     loadTargets();
@@ -60,6 +74,23 @@ function App() {
       events?.close();
       clearInterval(interval);
     };
+  }, []);
+
+  const handleHistoryWidthChange = useCallback((width: number) => {
+    const visibleChecks = Math.max(1, Math.floor(width / CHECK_WIDTH_PX));
+    const nextLimit = Math.min(
+      MAX_CHECKS_LIMIT,
+      Math.max(visibleChecks, Math.ceil(visibleChecks * CHECKS_BUFFER)),
+    );
+    if (Math.abs(nextLimit - checksLimitRef.current) < RESIZE_FETCH_THRESHOLD) {
+      return;
+    }
+
+    checksLimitRef.current = nextLimit;
+    fetchTargets(nextLimit).then((data) => {
+      setTargets(data);
+      setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
+    });
   }, []);
 
   useEffect(() => {
@@ -163,7 +194,7 @@ function App() {
       const body = await res.text();
       throw new Error(body || `Failed to update target (${res.status})`);
     }
-    const data = await fetch('/api/v1/targets').then((r) => r.json());
+    const data = await fetchTargets(checksLimitRef.current);
     setTargets(data);
   };
 
@@ -185,7 +216,7 @@ function App() {
       const body = await res.text();
       throw new Error(body || `Failed to add target (${res.status})`);
     }
-    const data = await fetch('/api/v1/targets').then((r) => r.json());
+    const data = await fetchTargets(checksLimitRef.current);
     setTargets(data);
   };
 
@@ -204,7 +235,7 @@ function App() {
       throw new Error(body || `Failed to delete target (${res.status})`);
     }
     setSelectedId((current) => (current === id ? null : current));
-    const data = await fetch('/api/v1/targets').then((r) => r.json());
+    const data = await fetchTargets(checksLimitRef.current);
     setTargets(data);
     if (data.length > 0) {
       setSelectedId((current) => current ?? data[0].id);
@@ -242,6 +273,7 @@ function App() {
                   canEdit={isLoggedIn}
                   onUpdate={handleUpdateTarget}
                   onDelete={handleDeleteTarget}
+                  onHistoryWidthChange={handleHistoryWidthChange}
                 />
               ))
             )}

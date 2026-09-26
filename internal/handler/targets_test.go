@@ -28,13 +28,19 @@ func TestTargetHandler_GetTargets(t *testing.T) {
 	defer db.Close()
 
 	repo := database.NewTargetRepository(db)
-	err = repo.CreateTarget(&database.Target{
+	target := &database.Target{
 		Name:     "Handler Target Unique",
 		URL:      "http://example.com/handler",
 		Schedule: "@every 1m",
-	})
+	}
+	err = repo.CreateTarget(target)
 	if err != nil {
 		t.Fatalf("failed to create target: %v", err)
+	}
+	for i := 0; i < 2; i++ {
+		if err := repo.CreateCheck(&database.Check{TargetID: target.ID, IsUp: true}); err != nil {
+			t.Fatalf("failed to create check: %v", err)
+		}
 	}
 
 	svc := service.NewTargetService(repo)
@@ -76,6 +82,38 @@ func TestTargetHandler_GetTargets(t *testing.T) {
 	}
 	if !foundHandlerTarget {
 		t.Errorf("expected to find 'Handler Target Unique' in targets response")
+	}
+
+	limitedReq := httptest.NewRequest("GET", "/api/targets?checks_limit=1", nil)
+	limitedRec := httptest.NewRecorder()
+	handler.GetTargets(limitedRec, limitedReq)
+	if limitedRec.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for checks_limit, got %d", limitedRec.Code)
+	}
+	var limitedTargets []database.TargetWithChecks
+	if err := json.NewDecoder(limitedRec.Body).Decode(&limitedTargets); err != nil {
+		t.Fatalf("failed to decode limited response: %v", err)
+	}
+	limitedFound := false
+	for _, limitedTarget := range limitedTargets {
+		if limitedTarget.ID == target.ID {
+			limitedFound = true
+			if len(limitedTarget.Checks) != 1 {
+				t.Errorf("expected one check for limited target, got %d", len(limitedTarget.Checks))
+			}
+		}
+	}
+	if !limitedFound {
+		t.Errorf("limited response did not contain handler target")
+	}
+
+	for _, value := range []string{"0", "501", "not-a-number"} {
+		invalidReq := httptest.NewRequest("GET", "/api/targets?checks_limit="+value, nil)
+		invalidRec := httptest.NewRecorder()
+		handler.GetTargets(invalidRec, invalidReq)
+		if invalidRec.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 for checks_limit=%q, got %d", value, invalidRec.Code)
+		}
 	}
 }
 
