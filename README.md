@@ -2,6 +2,8 @@
 
 A lightweight, self-hosted uptime monitoring application featuring a Go backend (SQLite) and a modern React frontend (TypeScript & Vite).
 
+![Uptime Monitor dashboard](docs/images/uptime.png)
+
 ## Features
 
 - **Automated Polling:** Background health checks scheduled per target using cron expressions with response time tracking and status code verification.
