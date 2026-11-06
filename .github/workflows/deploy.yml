@@ -151,12 +151,6 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab for alpine image
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
-        with:
-          sarif_file: 'alpine-trivy-results.sarif'
-          category: 'alpine-trivy-image'
-
-      - name: Upload Trivy scan results to GitHub Security tab for alpine image
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           sarif_file: 'alpine-trivy-results.sarif'
@@ -170,12 +164,6 @@ jobs:
           format: 'sarif'
           output: 'fs-trivy-results.sarif'
           severity: 'CRITICAL'
-
-      - name: Upload Trivy scan results to GitHub Security tab for filesystem
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
-        with:
-          sarif_file: 'fs-trivy-results.sarif'
-          category: 'trivy-fs'
 
       - name: Upload Trivy scan results to GitHub Security tab for filesystem
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
