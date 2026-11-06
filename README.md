@@ -25,7 +25,7 @@ A lightweight, self-hosted uptime monitoring application featuring a Go backend 
 ### Prerequisites
 
 - **Go** (v1.27.1 or newer)
-- **Node.js** (v24.21.0 or newer recommended) & npm
+- **Node.js** (v26.13.0 or newer recommended) & npm
 
 ---
 
