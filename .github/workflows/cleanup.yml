@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Clean dockerhub
-        uses: tripal/dockerhub_expire@28c78713e2906919ecd6effa08e01712135a5c20 # v1.0.0
+        uses: tripal/dockerhub_expire@8ccb0a6345195187eacea30a52fd1edf66e1581c # v1.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
